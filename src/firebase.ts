@@ -26,6 +26,20 @@ if (!firebaseConfig.apiKey && import.meta.env.DEV) {
   }
 }
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
-export const auth = getAuth();
+let app;
+let db: any;
+let auth: any;
+
+if (firebaseConfig.apiKey) {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
+  auth = getAuth(app);
+} else {
+  console.error("Firebase API Key is missing. Check your .env file or Netlify environment variables.");
+  // Export "null" or dummy versions to prevent import errors, 
+  // but the app should handle the missing config gracefully.
+  db = null;
+  auth = null;
+}
+
+export { db, auth };
