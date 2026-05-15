@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Orbitron:wght@400;700;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Orbitron", sans-serif;
+  
+  --color-accent-blue: #34d6ff;
+  --color-accent-ice: #e6f7ff;
+  --color-accent-steel: #8fb7c9;
+  --color-accent-navy: #0d1b2a;
+  --color-panel-dark: rgba(8, 15, 24, 0.78);
+  --color-bg-dark: #000;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-white font-sans antialiased;
+    scroll-behavior: smooth;
+  }
+}
+
+.orbitron {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(52, 214, 255, 0.65), 0 0 40px rgba(230, 247, 255, 0.25);
+}
+
+.blue-highlight { @apply text-accent-blue; }
+.ice-highlight { @apply text-accent-ice; }
+
+.gradient-btn {
+  background: linear-gradient(90deg, #34d6ff 0%, #e6f7ff 100%);
+  box-shadow: 0 0 25px rgba(52, 214, 255, 0.35);
+  transition: all 0.3s ease;
+}
+
+.gradient-btn:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+  box-shadow: 0 0 35px rgba(52, 214, 255, 0.55);
+}
+
+.glass {
+  @apply bg-panel-dark backdrop-blur-xl border border-accent-blue/10;
+}
+
+.nav-link {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  transition: color 0.3s;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.service-card {
+  @apply bg-linear-to-b from-[#0f1b2a]/72 to-[#03080e]/92 border border-accent-blue/16 backdrop-blur-md transition-all duration-400;
+}
+
+.service-card:hover {
+  @apply border-white/80 -translate-y-2.5 shadow-[0_10px_30px_rgba(52,214,255,0.18)];
+}
+
+.badge {
+  @apply bg-[#060c14]/72 border border-accent-steel/45 shadow-[0_0_16px_rgba(52,214,255,0.12)];
+}
+
+.frost-outline {
+  @apply border border-accent-ice/45 text-accent-ice bg-linear-to-b from-[#0e1924]/75 to-[#060c14]/90 transition-all;
+}
+
+.frost-outline:hover {
+  @apply bg-accent-ice text-[#06121d] border-accent-ice;
+}
+
+.blink-status {
+  animation: blink 1.5s step-start infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.logo-ring {
+  @apply border-accent-blue shadow-[0_0_15px_rgba(52,214,255,0.65)];
+}
+
+.logo-mark {
+  @apply bg-accent-ice;
+}
+
+.bg-fixed-car {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;
+  background-image: url('https://images.unsplash.com/photo-1584345604476-8ec5e12e42dd?q=80&w=2070&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  filter: grayscale(1) contrast(1.1) brightness(0.7);
+  pointer-events: none;
+}
+
+.bg-fixed-car::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+.bg-fixed-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(52, 214, 255, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(230, 247, 255, 0.05) 0%, transparent 40%),
+    linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+  pointer-events: none;
+}
+
+.panel-scan-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(52, 214, 255, 0.08) 48%, transparent 55%);
+  animation: scanSweep 5.5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanSweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+

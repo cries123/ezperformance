@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "appointment": {
+      "title": "Appointment",
+      "description": "A service request for a vehicle",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "vehicleInfo": { "type": "string", "description": "Year, Make, Model" },
+        "serviceDescription": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "customerPhone", "vehicleInfo", "serviceDescription", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/appointments/{appointmentId}": {
+      "schema": "appointment",
+      "description": "Collection of scheduled vehicle appointments"
+    }
+  }
+}
