@@ -1,6 +1,8 @@
 {
   "name": "EZ Performance",
-  "description": "Master level automotive diagnostics, advanced engine repair, and performance maintenance by Ethan Zandonatti. ASE Certified Hyundai Master Technician.",
+  "description": "Master level automotive diagnostics, advanced engine repair, and performance maintenance by Ethan Zandonatti. ASE Certified Master Tech.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

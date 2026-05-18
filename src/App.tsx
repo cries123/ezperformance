@@ -33,16 +33,19 @@ import {
   X,
   ChevronRight,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Droplets,
+  ShieldCheck,
+  Disc
 } from 'lucide-react';
-import { 
-  collection, 
-  addDoc, 
-  serverTimestamp,
-  doc,
-  getDocFromServer
-} from 'firebase/firestore';
-import { db } from './firebase';
+// import { 
+//   collection, 
+//   addDoc, 
+//   serverTimestamp,
+//   doc,
+//   getDocFromServer
+// } from 'firebase/firestore';
+// import { db } from './firebase';
 
 // --- Error Handling ---
 
@@ -171,73 +174,67 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     name: '',
     phone: '',
     vehicle: '',
-    service: ''
+    service: '',
+    price: 0,
+    priceLabel: ''
   });
+
+  const services = [
+    { id: 'oil', name: 'Oil & Filter Change', icon: Droplets, price: 95, label: '$95+' },
+    { id: 'safety', name: 'Safety Inspection', icon: ShieldCheck, price: 100, label: '$100' },
+    { id: 'ac', name: 'AC Service', icon: Thermometer, price: 150, label: '$150' },
+    { id: 'brake', name: 'Brake & Pad Service', icon: Disc, price: 300, label: '$300+' },
+    { id: 'diag', name: 'Diagnostics', icon: Activity, price: 150, label: '$150/HR' },
+    { id: 'other', name: 'Other / Custom', icon: Settings, price: 0, label: 'Custom' }
+  ];
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    console.log('Initiating booking submission to Firestore...');
     
     try {
-      // Priority 1: Save to database
-      await addDoc(collection(db, 'appointments'), {
-        customerName: formData.name,
-        customerPhone: formData.phone,
-        vehicleInfo: formData.vehicle,
-        serviceDescription: formData.service,
-        createdAt: serverTimestamp()
-      });
+      console.log('Simulating booking submission...');
+      localStorage.setItem(`booking_${Date.now()}`, JSON.stringify(formData));
       
-      console.log('Firestore document successfully created.');
-
-      // Priority 2: Trigger notification (not awaited to prevent UI hang)
+      // Notify endpoint
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: formData.name,
-          customerPhone: formData.phone,
-          vehicleInfo: formData.vehicle,
-          serviceDescription: formData.service
-        })
-      }).then(res => {
-        if (!res.ok) console.warn("Notification endpoint returned error:", res.status);
-        else console.log("Notification trigger successful.");
-      }).catch(err => {
-        console.warn("Notification trigger failed (network/server error):", err);
-      });
+        body: JSON.stringify(formData)
+      }).catch(err => console.warn("Notification trigger failed:", err));
 
       setIsSuccess(true);
     } catch (error) {
-      console.error('Detailed Booking Error:', error);
-      handleFirestoreError(error, OperationType.WRITE, 'appointments');
+      console.error('Booking Error:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const nextStep = () => setStep(prev => prev + 1);
+  const prevStep = () => setStep(prev => prev - 1);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-hidden">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
+        className="absolute inset-0 bg-black/95 backdrop-blur-2xl" 
       />
       
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
+        className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
       >
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-20"
+          className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-30"
         >
           <X size={20} className="text-zinc-400" />
         </button>
@@ -247,174 +244,275 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             <motion.div 
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="w-20 h-20 rounded-full bg-accent-blue/20 flex items-center justify-center mx-auto mb-8"
+              className="w-24 h-24 rounded-3xl bg-accent-blue/10 border border-accent-blue/30 flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(52,214,255,0.2)]"
             >
-              <CheckCircle2 size={40} className="text-accent-blue" />
+              <CheckCircle2 size={48} className="text-accent-blue" />
             </motion.div>
-            <h3 className="orbitron text-3xl font-black italic mb-4 uppercase">Request Sent</h3>
-            <p className="text-zinc-400 mb-8 italic">Ethan has received your project details. Expect a direct response within 24 hours to schedule your session.</p>
+            <h3 className="orbitron text-3xl font-black italic mb-4 uppercase">Transmission Complete</h3>
+            <p className="text-zinc-400 mb-10 italic max-w-sm mx-auto leading-relaxed">
+              Your request has been logged into the queue. Ethan will verify the technical requirements and contact you at <span className="text-accent-blue font-bold">{formData.phone}</span> very soon.
+            </p>
             <button 
               onClick={onClose}
-              className="gradient-btn px-12 py-4 rounded-xl orbitron font-black text-black uppercase italic"
+              className="gradient-btn px-16 py-5 rounded-2xl orbitron font-black text-black uppercase italic tracking-wider transition-transform hover:scale-105"
             >
-              Back to Site
+              Back to Terminal
             </button>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row h-[85vh] md:h-auto">
-            {/* Sidebar / Progress */}
-            <div className="w-full md:w-64 bg-black/40 p-8 border-r border-white/5 hidden md:block">
-              <div className="orbitron text-[10px] tracking-[0.4em] text-accent-blue mb-12 uppercase">Booking Engine</div>
-              <div className="space-y-6">
-                {[
-                  { id: 1, label: 'Details' },
-                  { id: 2, label: 'Confirm' }
-                ].map(s => (
-                  <div key={s.id} className="flex items-center gap-4">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full border flex items-center justify-center text-xs font-black orbitron",
-                      step === s.id ? "bg-accent-blue border-accent-blue text-black" : 
-                      step > s.id ? "bg-accent-blue/20 border-accent-blue/40 text-accent-blue" : "border-white/10 text-zinc-600"
-                    )}>
-                      {s.id}
+          <>
+            <div className="relative h-2 bg-white/5 w-full">
+              <motion.div 
+                className="absolute top-0 left-0 h-full bg-accent-blue shadow-[0_0_15px_rgba(52,214,255,0.5)]"
+                initial={{ width: "33%" }}
+                animate={{ width: `${(step / 3) * 100}%` }}
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col md:flex-row min-h-0">
+              {/* Desktop Progress Rail */}
+              <div className="w-64 bg-black/40 p-8 border-r border-white/5 hidden md:block">
+                <div className="orbitron text-[10px] tracking-[0.5em] text-accent-blue mb-12 uppercase">Booking Engine</div>
+                <div className="space-y-8">
+                  {[
+                    { id: 1, label: 'Identity', icon: User },
+                    { id: 2, label: 'Service', icon: Wrench },
+                    { id: 3, label: 'Finalize', icon: CheckCircle2 }
+                  ].map(s => (
+                    <div key={s.id} className="flex items-center gap-4 group">
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-500",
+                        step === s.id ? "bg-accent-blue border-accent-blue text-black shadow-[0_0_15px_rgba(52,214,255,0.4)]" : 
+                        step > s.id ? "bg-accent-blue/10 border-accent-blue/30 text-accent-blue" : "border-white/5 text-zinc-700 bg-white/2"
+                      )}>
+                        <s.icon size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={cn(
+                          "orbitron text-[8px] tracking-[0.2em] uppercase font-black",
+                          step >= s.id ? "text-accent-ice" : "text-zinc-800"
+                        )}>Stage 0{s.id}</span>
+                        <span className={cn(
+                          "orbitron text-[10px] tracking-widest uppercase font-black",
+                          step === s.id ? "text-white" : "text-zinc-600"
+                        )}>{s.label}</span>
+                      </div>
                     </div>
-                    <span className={cn(
-                      "orbitron text-[10px] tracking-widest uppercase",
-                      step === s.id ? "text-white" : "text-zinc-600"
-                    )}>{s.label}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              {/* Main Interaction Zone */}
+              <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
+                <AnimatePresence mode="wait">
+                  {step === 1 && (
+                    <motion.div 
+                      key="step1"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div>
+                        <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Identity & Platform</h3>
+                        <p className="text-zinc-500 text-xs italic">Enter your contact info and the vehicle we'll be working on.</p>
+                      </div>
+                      
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="orbitron text-[9px] tracking-widest text-zinc-500 uppercase px-1">Full Name</label>
+                            <input 
+                              type="text"
+                              value={formData.name}
+                              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                              className="w-full bg-white/3 border border-white/5 rounded-xl px-4 py-4 text-white focus:border-accent-blue focus:bg-white/5 focus:outline-hidden transition-all text-sm font-medium"
+                              placeholder="e.g. John Doe"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="orbitron text-[9px] tracking-widest text-zinc-500 uppercase px-1">Phone Link</label>
+                            <input 
+                              type="tel"
+                              value={formData.phone}
+                              onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                              className="w-full bg-white/3 border border-white/5 rounded-xl px-4 py-4 text-white focus:border-accent-blue focus:bg-white/5 focus:outline-hidden transition-all text-sm font-medium"
+                              placeholder="805-555-0123"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="orbitron text-[9px] tracking-widest text-zinc-500 uppercase px-1">Vehicle Platform (Year, Make, Model)</label>
+                          <div className="relative group">
+                            <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-accent-blue transition-colors" size={18} />
+                            <input 
+                              type="text"
+                              value={formData.vehicle}
+                              onChange={e => setFormData(prev => ({ ...prev, vehicle: e.target.value }))}
+                              className="w-full bg-white/3 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-white focus:border-accent-blue focus:bg-white/5 focus:outline-hidden transition-all text-sm font-medium"
+                              placeholder="2022 Porsche 911 GT3"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          disabled={!formData.name || !formData.phone || !formData.vehicle}
+                          onClick={nextStep}
+                          className="w-full gradient-btn py-5 rounded-2xl orbitron font-black text-black uppercase italic disabled:opacity-30 flex items-center justify-center gap-3 mt-4"
+                        >
+                          Select Service <ChevronRight size={20} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {step === 2 && (
+                    <motion.div 
+                      key="step2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div>
+                        <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Precision Selection</h3>
+                        <p className="text-zinc-500 text-xs italic">Choose a service category or describe custom requirements.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {services.map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => setFormData(prev => ({ ...prev, service: s.name, price: s.price, priceLabel: s.label }))}
+                            className={cn(
+                              "p-4 rounded-2xl border text-left transition-all duration-300 group relative",
+                              formData.service === s.name 
+                                ? "bg-accent-blue/10 border-accent-blue/50 ring-1 ring-accent-blue/20" 
+                                : "bg-white/2 border-white/5 hover:border-white/20"
+                            )}
+                          >
+                            <s.icon className={cn(
+                              "mb-3 transition-colors",
+                              formData.service === s.name ? "text-accent-blue" : "text-zinc-600 group-hover:text-zinc-400"
+                            )} size={24} />
+                            <div className={cn(
+                              "orbitron text-[9px] font-black tracking-widest uppercase mb-1",
+                              formData.service === s.name ? "text-white" : "text-zinc-500"
+                            )}>{s.name}</div>
+                            <div className={cn(
+                              "text-[10px] font-mono",
+                              formData.service === s.name ? "text-accent-ice" : "text-zinc-600"
+                            )}>{s.label}</div>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="orbitron text-[9px] tracking-widest text-zinc-500 uppercase px-1">Specific Requirements (Optional)</label>
+                        <textarea 
+                          className="w-full bg-white/3 border border-white/5 rounded-xl px-4 py-4 text-white focus:border-accent-blue focus:bg-white/5 focus:outline-hidden transition-all text-sm font-medium h-24 resize-none"
+                          placeholder="Describe the technical issue or modifications..."
+                          onChange={e => {
+                            if (!services.some(s => s.name === e.target.value)) {
+                              setFormData(prev => ({ ...prev, service: e.target.value, price: 0, priceLabel: 'Custom Quote' }));
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex gap-4">
+                        <button onClick={prevStep} className="flex-1 glass py-5 rounded-2xl orbitron text-[10px] font-black uppercase tracking-[0.3em] italic">Back</button>
+                        <button
+                          disabled={!formData.service}
+                          onClick={nextStep}
+                          className="flex-[2] gradient-btn py-5 rounded-2xl orbitron font-black text-black uppercase italic disabled:opacity-30"
+                        >
+                          Review Request
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {step === 3 && (
+                    <motion.div 
+                      key="step3"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
+                    >
+                      <div>
+                        <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Execution Scan</h3>
+                        <p className="text-zinc-500 text-xs italic">Verify all technical details before final transmission.</p>
+                      </div>
+
+                      <div className="bg-white/3 border border-white/5 rounded-3xl p-8 space-y-6 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Activity size={100} className="text-accent-blue" />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                          <div>
+                            <div className="orbitron text-[8px] tracking-[0.3em] text-zinc-600 mb-2 uppercase italic font-black">Platform</div>
+                            <div className="text-white font-bold tracking-tight">{formData.vehicle}</div>
+                          </div>
+                          <div>
+                            <div className="orbitron text-[8px] tracking-[0.3em] text-zinc-600 mb-2 uppercase italic font-black">Service Category</div>
+                            <div className="text-accent-blue font-bold tracking-tight">{formData.service}</div>
+                          </div>
+                          <div className="md:col-span-2">
+                            <div className="orbitron text-[8px] tracking-[0.3em] text-zinc-600 mb-2 uppercase italic font-black">Contract Holder</div>
+                            <div className="text-white font-bold tracking-tight">{formData.name}</div>
+                            <div className="text-zinc-500 text-xs font-mono">{formData.phone}</div>
+                          </div>
+                        </div>
+
+                        <div className="p-6 rounded-2xl bg-accent-blue/5 border border-accent-blue/20 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10 mt-6">
+                          <div className="text-center sm:text-left">
+                            <div className="orbitron text-[8px] tracking-[0.4em] text-accent-ice mb-1 uppercase font-black">Estimated Total</div>
+                            <div className="text-3xl text-white orbitron font-black italic tracking-tighter">
+                              {formData.priceLabel}
+                            </div>
+                          </div>
+                          <div className="text-[7px] text-accent-blue/40 orbitron uppercase tracking-widest text-center sm:text-right max-w-[120px] leading-relaxed">
+                            Final billing subject to technical teardown
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 p-4 bg-accent-blue/5 border border-accent-blue/10 rounded-2xl">
+                        <AlertCircle size={16} className="text-accent-blue shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-zinc-500 italic leading-relaxed">
+                          Finalizing this request opens a direct communications channel with Ethan. Professional grade service requires precision synchronization. Ethan will call you to confirm final details.
+                        </p>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <button onClick={prevStep} className="flex-1 glass py-5 rounded-2xl orbitron text-[10px] font-black uppercase tracking-[0.3em] italic">Back</button>
+                        <button
+                          disabled={isSubmitting}
+                          onClick={handleBooking}
+                          className="flex-[2] gradient-btn py-5 rounded-2xl orbitron font-black text-black uppercase italic disabled:opacity-30 flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(52,214,255,0.3)]"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Activity className="animate-spin" size={18} />
+                              Transmitting...
+                            </>
+                          ) : (
+                            <>
+                              Confirm & Request Call <Zap size={18} />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
-
-            {/* Main Content */}
-            <div className="flex-1 p-8 md:p-12 overflow-y-auto">
-              {step === 1 && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-8"
-                >
-                  <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Project Details</h3>
-                  
-                  <form className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="orbitron text-[10px] tracking-widest text-zinc-500 uppercase px-1">Full Name</label>
-                        <input 
-                          type="text"
-                          required
-                          value={formData.name}
-                          onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-accent-blue focus:outline-hidden transition-colors"
-                          placeholder="John Doe"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="orbitron text-[10px] tracking-widest text-zinc-500 uppercase px-1">Phone Number</label>
-                        <input 
-                          type="tel"
-                          required
-                          value={formData.phone}
-                          onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-accent-blue focus:outline-hidden transition-colors"
-                          placeholder="805-555-0123"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="orbitron text-[10px] tracking-widest text-zinc-500 uppercase px-1">Vehicle Info</label>
-                      <input 
-                        type="text"
-                        required
-                        value={formData.vehicle}
-                        onChange={e => setFormData(prev => ({ ...prev, vehicle: e.target.value }))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-accent-blue focus:outline-hidden transition-colors"
-                        placeholder="2018 BMW M3"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="orbitron text-[10px] tracking-widest text-zinc-500 uppercase px-1">Service Needed</label>
-                      <textarea 
-                        required
-                        value={formData.service}
-                        onChange={e => setFormData(prev => ({ ...prev, service: e.target.value }))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-accent-blue focus:outline-hidden transition-colors h-32 resize-none"
-                        placeholder="Describe the issue or performance mods requested..."
-                      />
-                    </div>
-
-                    <div className="pt-4">
-                      <button
-                        type="button"
-                        disabled={!formData.name || !formData.phone || !formData.vehicle || !formData.service}
-                        onClick={() => setStep(2)}
-                        className="w-full gradient-btn py-4 rounded-xl orbitron font-black text-black uppercase italic disabled:opacity-50 flex items-center justify-center gap-3"
-                      >
-                        Review Booking <ChevronRight size={18} />
-                      </button>
-                    </div>
-                  </form>
-                </motion.div>
-              )}
-
-              {step === 2 && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-8"
-                >
-                  <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Confirmation</h3>
-                  
-                  <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <div className="orbitron text-[8px] tracking-[0.3em] text-zinc-500 mb-1 uppercase">Vehicle</div>
-                        <div className="text-white font-bold">{formData.vehicle}</div>
-                      </div>
-                      <div>
-                        <div className="orbitron text-[8px] tracking-[0.3em] text-zinc-500 mb-1 uppercase">Customer</div>
-                        <div className="text-white font-bold">{formData.name} ({formData.phone})</div>
-                      </div>
-                      <div>
-                        <div className="orbitron text-[8px] tracking-[0.3em] text-zinc-500 mb-1 uppercase">Request</div>
-                        <div className="text-zinc-400 text-sm italic line-clamp-3">{formData.service}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-4 bg-accent-blue/5 border border-accent-blue/20 rounded-2xl">
-                    <AlertCircle size={20} className="text-accent-blue shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-zinc-400 italic">
-                      Ethan personally reviews all requests. Professional grade mechanical support requires precision planning. Expect a text or call shortly.
-                    </p>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => setStep(1)}
-                      className="flex-1 glass py-4 rounded-xl orbitron text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={handleBooking}
-                      className="flex-[2] gradient-btn py-4 rounded-xl orbitron font-black text-black uppercase italic disabled:opacity-50 flex items-center justify-center gap-3"
-                    >
-                      {isSubmitting ? 'Sending...' : 'Transmit Request'} 
-                      {!isSubmitting && <CheckCircle2 size={18} />}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </div>
+          </>
         )}
       </motion.div>
     </div>
@@ -565,9 +663,9 @@ function IgnitionScreen({ onComplete }: { onComplete: () => void; key?: React.Ke
   );
 }
 
-type View = 'home' | 'catalog' | 'gallery';
+type View = 'home' | 'catalog' | 'gallery' | 'contact';
 
-function Gallery() {
+function Gallery({ onNavigate }: { onNavigate: (view: View) => void }) {
   const projects = [
     {
       title: "Porsche 911 GT3",
@@ -682,10 +780,7 @@ function Gallery() {
             <span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-accent-blue" /> Exotic Service</span>
           </div>
           <button 
-            onClick={() => {
-              const el = document.getElementById('contact');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={() => onNavigate('contact')}
             className="gradient-btn px-12 py-5 rounded-xl orbitron font-black text-xl italic text-black uppercase"
           >
             Start Project
@@ -696,7 +791,7 @@ function Gallery() {
   );
 }
 
-function Navbar({ currentView, onNavigate }: { currentView: View; onNavigate: (view: View) => void }) {
+function Navbar({ currentView, onNavigate, onBookingOpen }: { currentView: View; onNavigate: (view: View) => void; onBookingOpen: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -709,17 +804,28 @@ function Navbar({ currentView, onNavigate }: { currentView: View; onNavigate: (v
           setIsOpen(false);
         }}
       >
-        <div className="relative flex items-center gap-2 md:gap-3">
-          <div className="logo-ring w-8 h-8 md:w-12 md:h-12 border-2 border-accent-blue/30 rounded-full flex items-center justify-center relative bg-black/40 group-hover:border-accent-blue transition-all duration-500">
-            <span className="orbitron font-black text-xs md:text-xl text-white group-hover:text-accent-ice transition-colors">EZ</span>
-            <div className="absolute -top-1 -right-1 w-2 h-2 md:w-4 md:h-4 bg-accent-blue rounded-full blur-[2px] md:blur-[4px] opacity-40 group-hover:opacity-100 transition-opacity"></div>
+        <div className="relative flex items-center gap-2 md:gap-4">
+          <div className="relative h-14 w-20 md:h-18 md:w-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+            <img 
+              src="/motor-logo.png" 
+              alt="EZ Performance Logo" 
+              className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(52,214,255,0.4)] transition-all duration-500" 
+              onError={(e) => {
+                e.currentTarget.classList.add('hidden');
+                const fallback = e.currentTarget.parentElement?.querySelector('.fallback-logo');
+                if (fallback) fallback.classList.remove('hidden');
+              }} 
+            />
+            <div className="fallback-logo hidden flex items-center justify-center relative w-full h-full">
+              <div className="absolute inset-0 bg-accent-blue/10 rounded-full blur-xl animate-pulse"></div>
+              <Activity className="text-accent-blue w-8 h-8 md:w-10 md:h-10 relative z-10" />
+            </div>
           </div>
           <div className="flex flex-col">
-            <div className="orbitron font-black text-base md:text-2xl leading-[0.7] tracking-tighter italic text-white flex flex-col">
-              <span className="group-hover:text-accent-blue transition-colors">EZ</span>
-              <span className="blue-highlight text-[10px] md:text-lg">PERFORMANCE</span>
+            <div className="orbitron font-black text-sm md:text-2xl leading-none tracking-tighter italic text-white flex flex-col">
+              <span className="blue-highlight">EZ PERFORMANCE</span>
             </div>
-            <div className="hidden lg:block orbitron text-[6px] tracking-[0.2em] text-zinc-500 font-black uppercase mt-1 leading-none italic">
+            <div className="hidden lg:block orbitron text-[6px] tracking-[0.3em] text-zinc-500 font-black uppercase mt-1 leading-none italic opacity-80">
               Automotive Diagnostics · Repair · Maintenance
             </div>
           </div>
@@ -746,25 +852,22 @@ function Navbar({ currentView, onNavigate }: { currentView: View; onNavigate: (v
           Gallery
         </button>
         <button 
-          onClick={() => {
-            onNavigate('home');
-            setTimeout(() => {
-              const el = document.getElementById('contact');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
-          }} 
-          className="nav-link text-zinc-400 hover:text-white"
+          onClick={() => onNavigate('contact')} 
+          className={`nav-link ${currentView === 'contact' ? 'blue-highlight' : 'text-zinc-400 hover:text-white'}`}
         >
           Contact
         </button>
       </nav>
 
       <div className="flex items-center gap-2 md:gap-4">
-        <a href="tel:18055888082" className="gradient-btn px-3 py-2 md:px-8 md:py-3 rounded flex items-center gap-2 orbitron font-black text-[9px] md:text-xs tracking-widest text-black">
-          <Phone size={12} className="md:hidden" />
-          <span className="hidden sm:inline">CALL NOW</span>
-          <span className="sm:hidden">CALL</span>
-        </a>
+        <button 
+          onClick={onBookingOpen}
+          className="gradient-btn px-3 py-2 md:px-8 md:py-3 rounded flex items-center gap-2 orbitron font-black text-[9px] md:text-xs tracking-widest text-black shadow-[0_0_15px_rgba(52,214,255,0.3)] hover:scale-105 transition-transform"
+        >
+          <Calendar size={12} className="md:hidden" />
+          <span className="hidden sm:inline">BOOK NOW</span>
+          <span className="sm:hidden">BOOK</span>
+        </button>
         <button 
           className="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors" 
           onClick={() => setIsOpen(!isOpen)}
@@ -803,15 +906,8 @@ function Navbar({ currentView, onNavigate }: { currentView: View; onNavigate: (v
                 Gallery
               </button>
               <button 
-                onClick={() => {
-                  onNavigate('home');
-                  setIsOpen(false);
-                  setTimeout(() => {
-                    const el = document.getElementById('contact');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                }} 
-                className="text-lg text-zinc-400 hover:text-white font-black italic tracking-wider text-left py-2"
+                onClick={() => { onNavigate('contact'); setIsOpen(false); }} 
+                className={`text-left text-lg font-black italic tracking-wider py-2 border-b border-white/5 ${currentView === 'contact' ? 'blue-highlight' : 'text-zinc-400'}`}
               >
                 Contact
               </button>
@@ -988,15 +1084,15 @@ function Hero({ onNavigate }: { onNavigate: (view: View) => void }) {
           <div className="flex flex-wrap gap-4 mb-12">
             <div className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-accent-blue hover:border-accent-blue transition-all">
               <div className="w-6 h-6 rounded-lg bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20">
-                <Settings size={14} />
+                <Globe size={14} />
               </div>
-              ASE CERTIFIED
+              SERVING LOMPOC TO PASO ROBLES
             </div>
             <div className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-accent-ice hover:border-accent-ice transition-all">
               <div className="w-6 h-6 rounded-lg bg-accent-ice/10 flex items-center justify-center border border-accent-ice/20">
                 <Wrench size={14} />
               </div>
-              HYUNDAI MASTER TECH
+              MASTER TECH CERTIFIED
             </div>
           </div>
 
@@ -1078,22 +1174,22 @@ function Services({ onNavigate }: { onNavigate: (view: View) => void }) {
     {
       icon: ZapIcon,
       title: "HYBRID & EV SERVICE",
-      description: "Specialized service for high-voltage systems. Maintenance and repair for the next generation of transport."
+      description: "Specialized service for high-voltage systems. EV Battery health monitoring and component repair."
     },
     {
       icon: Wrench,
       title: "ADVANCED REPAIR",
-      description: "From full engine rebuilds to complex brake systems, we handle the heavy-duty jobs."
+      description: "From precision engine rebuilds to brake and pad replacement, we handle the heavy-duty jobs."
     },
     {
-      icon: Gauge,
-      title: "CARB LEGAL MODS",
-      description: "Performance modifications that keep you fast, powerful, and completely street legal."
+      icon: Thermometer,
+      title: "AC SERVICE",
+      description: "Complete HVAC system diagnostics and recharging to keep your cabin environment perfect."
     },
     {
       icon: Smartphone,
       title: "MOBILE SERVICE",
-      description: "Skip the waiting room. We bring the tools, the tech, and the expertise right to your driveway.",
+      description: "Dispatch covering Lompoc to Paso Robles. Skip the waiting room—we bring master-level expertise right to your driveway.",
       isSpecial: true
     }
   ];
@@ -1150,33 +1246,40 @@ function Catalog({ onNavigate }: { onNavigate: (view: View) => void }) {
     {
       title: "Basic Maintenance & Technical Care",
       items: [
-        { name: "Precision Oil Service", price: "$95+", detail: "Full synthetic service with ultra-premium filters." },
+        { name: "Oil & Filter Change", price: "$95+", detail: "Full synthetic service with ultra-premium filters." },
         { name: "Fluid Care Package", price: "$120+", detail: "Coolant, brake, and power steering health exchange." },
-        { name: "Vital Systems Inspection", price: "$85", detail: "Exhaustive 50-point mechanical and safety audit." }
+        { name: "Safety Inspection", price: "$100", detail: "Exhaustive 50-point mechanical and safety audit." },
+        { name: "AC Service", price: "$150", detail: "System performance check and refrigerant recharge." }
       ]
     },
     {
       title: "Diagnostics & Electronics",
       items: [
         { name: "Full Computer Scan", price: "$120+", detail: "Deep system interrogation across all modules." },
-        { name: "Electrical Tracing", price: "$150/hr", detail: "Short circuit and parasitic draw pinpointing." },
-        { name: "Module Programming", price: "$200+", detail: "Dealer-level software updates and syncing." }
+        { name: "Electrical Tracing", price: "$200/HR", detail: "Short circuit and parasitic draw pinpointing." },
+        { name: "Module Programming", price: "$150", detail: "Dealer-level software updates and syncing." },
+        { name: "Marine and Car Stereo Installation", price: "Varies", detail: "Custom audio builds and system integration." }
       ]
     },
     {
       title: "Performance & Suspension",
       items: [
         { name: "Levelling Kit Install", price: "$400+", detail: "Professional truck stance improvement." },
-        { name: "Lift Kit Integration", price: "Custom", detail: "Full suspension geometry optimization." },
-        { name: "Tuning & Mapping", price: "Custom", detail: "Power curve and shift point optimization." }
+        { name: "Lift Kit Integration", price: "Varies", detail: "Full suspension geometry optimization." }
       ]
     },
     {
       title: "Specialized Services",
       items: [
-        { name: "EV Battery Health", price: "$180", detail: "High-voltage block variance testing." },
-        { name: "Engine Rebuilds", price: "Custom", detail: "Full teardown and precision machining." },
-        { name: "Brake Overhaul", price: "$300+", detail: "High-performance pad and rotor conversion." }
+        { name: "EV Battery Health", price: "$200", detail: "High-voltage block variance testing." },
+        { name: "Engine Rebuilds", price: "Varies", detail: "Full teardown and precision machining." },
+        { name: "Brake pad and Rotor replacement", price: "$300+", detail: "Quality pad and rotor renewal and service." }
+      ]
+    },
+    {
+      title: "Tow Service",
+      items: [
+        { name: "Recovery & Transport", price: "$5/mile", detail: "Minimum hook up fee $50. If your car is down we will come pick it up for repairs." }
       ]
     }
   ];
@@ -1221,13 +1324,7 @@ function Catalog({ onNavigate }: { onNavigate: (view: View) => void }) {
             <p className="text-zinc-400 italic">We handle custom performance projects and rare vehicle platforms. Reach out for a specialized quote.</p>
           </div>
           <button 
-            onClick={() => {
-              onNavigate('home');
-              setTimeout(() => {
-                const el = document.getElementById('contact');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }, 100);
-            }} 
+            onClick={() => onNavigate('contact')} 
             className="gradient-btn px-12 py-5 rounded-xl orbitron font-black text-xl italic text-black uppercase"
           >
             Custom Quote
@@ -1300,186 +1397,6 @@ function Process() {
   );
 }
 
-function Testimonials() {
-  const reviews = [
-    { quote: "Ethan sorted out the transmission issues on my Altima after three other shops failed to diagnose it. Professional, honest, and fast.", author: "Marcus R.", vehicle: "Nissan Altima" },
-    { quote: "The mobile oil service for my F-150 is a game changer for my work schedule. Clean, expert work right in my driveway.", author: "Sarah L.", vehicle: "Ford F-150" },
-    { quote: "Master-level maintenance on my Kia at a fraction of the dealer cost. The precision in the diagnostics is impressive.", author: "David K.", vehicle: "Kia Stinger" },
-    { quote: "Finally found a tech who actually understands Subaru Boxer engines. My WRX has never run smoother.", author: "James T.", vehicle: "Subaru WRX" },
-    { quote: "Excellent service on my Honda Accord. He caught a failing wheel bearing that was making a faint noise I barely noticed.", author: "Linda M.", vehicle: "Honda Accord" },
-    { quote: "The diagnostic scan on my RAV4 was dead on. Fixed the EVAP leak in under an hour. Highly recommended.", author: "Robert B.", vehicle: "Toyota RAV4" },
-    { quote: "Professional, knowledgeable, and easy to work with. He handled the brake build on my Silverado perfectly.", author: "Mike S.", vehicle: "Chevrolet Silverado" },
-    { quote: "Great experience with my Mazda3. The scheduled maintenance was thorough and much more affordable than the dealership.", author: "Emily J.", vehicle: "Mazda3" },
-    { quote: "Precision check on my Jeep Wrangler. He dialed in the suspension after my lift kit install. Handles great now.", author: "Kevin W.", vehicle: "Jeep Wrangler" },
-    { quote: "He knows his Volkswagens. My GTI's carbon cleaning was done meticulously. Notable performance gain.", author: "Chris P.", vehicle: "VW GTI" },
-    { quote: "Very impressed with the electronic diagnostics on my Lexus. He found a sensor issue and saved me hundreds.", author: "Sophia O.", vehicle: "Lexus RX" },
-    { quote: "The mobile service for my daily commuter Civic is incredibly convenient. Always on time and professional.", author: "Alex G.", vehicle: "Honda Civic" },
-    { quote: "Ethan is a true professional. He explained everything clearly and got my Tahoe back on the road fast.", author: "John D.", vehicle: "Chevrolet Tahoe" },
-    { quote: "Top-tier work on my Nissan Rogue. The AC repair was handled efficiently and it's blowing ice cold now.", author: "Lisa M.", vehicle: "Nissan Rogue" },
-    { quote: "Found a cooling leak that two other shops missed in my Ford Explorer. Ethan's attention to detail is unmatched.", author: "Peter H.", vehicle: "Ford Explorer" },
-    { quote: "Excellent maintenance on my Kia Sorrento. The drive is much smoother now. Very reliable service.", author: "Amanda C.", vehicle: "Kia Sorrento" },
-    { quote: "He rescued my older Toyota Tacoma. Solid mechanical work that has kept it running for miles.", author: "Bill V.", vehicle: "Toyota Tacoma" },
-    { quote: "Technical mastery of the BMW 3 Series. He sorted out the cooling system issues with factory precision.", author: "Ryan F.", vehicle: "BMW 330i" },
-    { quote: "Fast, honest, and reliable. Handled the timing belt on my Honda Odyssey. One less thing to worry about.", author: "Megan R.", vehicle: "Honda Odyssey" },
-    { quote: "The diagnostics on my Audi A4 were extremely accurate. He's very transparent about what actually needs repair.", author: "Daniel S.", vehicle: "Audi A4" },
-    { quote: "Did a fantastic job with my Hyundai Elantra's brakes. Very quiet now and stopping power is perfect.", author: "Kelly P.", vehicle: "Hyundai Elantra" },
-    { quote: "The mobile tech kit he has is impressive. He did my Ford Fusion's battery service right in my garage.", author: "Steve N.", vehicle: "Ford Fusion" },
-    { quote: "Expert maintenance for my Subaru Forester. He noticed a small head gasket weep before it became a crisis.", author: "Rachel W.", vehicle: "Subaru Forester" },
-    { quote: "Honest advice on my Ram 1500. He didn't try to upsell me on anything I didn't need. Just great work.", author: "Tom L.", vehicle: "Ram 1500" },
-    { quote: "Perfectly handled the intake service on my Nissan Maxima. The car feels responsive again.", author: "Brian K.", vehicle: "Nissan Maxima" },
-    { quote: "Highest level of professionalism. He maintained my Mazda CX-5 and it's performing ideally.", author: "Olivia H.", vehicle: "Mazda CX-5" },
-    { quote: "He diagnosed the hybrid system in my Prius when the dealer was stumped. Ethan really knows his tech.", author: "Mark A.", vehicle: "Toyota Prius" },
-    { quote: "Quality repair on my Honda Pilot. The suspension feels brand new again. Wonderful service.", author: "Jessica Z.", vehicle: "Honda Pilot" },
-    { quote: "Great communication throughout the repair of my GMC Sierra. Very trustworthy and skilled.", author: "Paul M.", vehicle: "GMC Sierra" },
-    { quote: "He fixed a pesky rattle in my Kia Optima that had been driving me crazy. Outstanding work.", author: "Natalie G.", vehicle: "Kia Optima" },
-    { quote: "Precise engine work on my Toyota Camry. You can tell he takes pride in every turn of the wrench.", author: "George T.", vehicle: "Toyota Camry" },
-    { quote: "Super convenient mobile service for my commute-heavy life. Handled my Nissan Sentra perfectly.", author: "Karen S.", vehicle: "Nissan Sentra" },
-    { quote: "The diagnostic depth for my Ford Edge was better than the local garage. I'm a customer for life.", author: "Jeff R.", vehicle: "Ford Edge" },
-    { quote: "Flawless service on my Subaru Outback. He found an axle issue that was just starting to manifest.", author: "Heather B.", vehicle: "Subaru Outback" },
-    { quote: "Highly proficient with Lexus platforms. My ES350 is running incredibly silent and smooth.", author: "Richard W.", vehicle: "Lexus ES" },
-    { quote: "Brilliant technical work on my Volkswagen Tiguan. He handled the turbocharger issue with ease.", author: "Scott V.", vehicle: "VW Tiguan" },
-    { quote: "The most reliable mechanic I've worked with. Fixed my Hyundai Santa Fe's steering system quickly.", author: "Lauren D.", vehicle: "Hyundai Santa Fe" },
-    { quote: "He set up my Toyota Tacoma with a new leveling kit. The stance is perfect and handles great.", author: "Justin C.", vehicle: "Toyota Tacoma" },
-    { quote: "Efficient and professional brake replacement on my Honda Accord. No squeaks, just solid stops.", author: "Nicole K.", vehicle: "Honda Accord" },
-    { quote: "Diagnostic expert for Ford trucks. He fixed a sensor issue on my F-250 that was causing limp mode.", author: "Garry T.", vehicle: "Ford F-250" },
-    { quote: "Service on my Nissan Frontier was top-notch. Quick, clean, and he knows his mechanical specs.", author: "Derek P.", vehicle: "Nissan Frontier" },
-    { quote: "I take both our Kia Souls to Ethan. His level of detail is exactly what you want in a mechanic.", author: "Carol M.", vehicle: "Kia Soul" },
-    { quote: "Professional grade work on my Toyota 4Runner. He handled the differential service with master skill.", author: "Wayne H.", vehicle: "Toyota 4Runner" },
-    { quote: "Ethan is meticulous. My Mazda CX-9's regular service was done with incredible care.", author: "Diana G.", vehicle: "Mazda CX-9" },
-    { quote: "Master technician for sure. Fixed a complex electrical issue on my BMW X5 that others refused to touch.", author: "Steven B.", vehicle: "BMW X5" },
-    { quote: "Reliable and high-tech approach to maintenance. He handled my Chevy Equinox service excellently.", author: "Pam S.", vehicle: "Chevrolet Equinox" },
-    { quote: "Great mobile service for my Ford Ranger. He replaced the alternator in record time right at my house.", author: "Ronnie J.", vehicle: "Ford Ranger" },
-    { quote: "Exceptional knowledge of Honda systems. My CR-V is running perfectly after its major service milestone.", author: "Janet L.", vehicle: "Honda CR-V" },
-    { quote: "He resolved a persistent engine light on my Kia Forte. Efficient and professional diagnostics.", author: "Anthony Q.", vehicle: "Kia Forte" },
-    { quote: "Fixed the suspension on my Dodge Charger. Now it corners like it's on rails. Precise work.", author: "Eric V.", vehicle: "Dodge Charger" },
-    { quote: "Ethan's diagnostic skills for my Nissan Murano saved me a ton of time and money. Great results.", author: "Sandra K.", vehicle: "Nissan Murano" },
-    { quote: "He's very transparent and honest. My Toyota Corolla's maintenance was done perfectly and within budget.", author: "Jim B.", vehicle: "Toyota Corolla" },
-    { quote: "Quality service on my Subaru Ascent. The car feels more responsive and the engine sounds healthier.", author: "Kate F.", vehicle: "Subaru Ascent" },
-    { quote: "Master mechanic for a reason. He sorted out the hybrid drive in my Ford C-Max flawlessly.", author: "Clarence R.", vehicle: "Ford C-Max" },
-    { quote: "Impressed by the cleanliness and organization of his mobile service for my GMC Acadia. Highly expert.", author: "Julie T.", vehicle: "GMC Acadia" },
-    { quote: "The electrical diagnostics on my Jeep Cherokee were spot on. He fixed the wiring issue perfectly.", author: "Fred D.", vehicle: "Jeep Cherokee" },
-    { quote: "Professional, skilled, and honest work on my Nissan Titan. I wouldn't trust anyone else with it now.", author: "Luke W.", vehicle: "Nissan Titan" },
-    { quote: "Incredible attention to detail on my Volkswagen Jetta. The drive is silent and smooth after his work.", author: "Monica P.", vehicle: "VW Jetta" },
-    { quote: "He's handled several repairs for our family's Toyotas. Consistent, high-quality results every time.", author: "The Miller Family", vehicle: "Toyota Sienna" },
-    { quote: "Excellent maintenance on my Honda Fit. He's very thorough and checks every mechanical detail.", author: "Cynthia R.", vehicle: "Honda Fit" },
-    { quote: "Diagnostic expert on my Kia Sportage. He found a minor vacuum leak that was causing rough idle.", author: "Harold S.", vehicle: "Kia Sportage" },
-    { quote: "Great results on my Ford Mustang's suspension build. The handling is much more aggressive and precise.", author: "Jake M.", vehicle: "Ford Mustang" },
-    { quote: "Reliable mechanical care for my Mazda CX-3. He always provides clear technical feedback.", author: "Becky L.", vehicle: "Mazda CX-3" },
-    { quote: "The mobile service for my daily Jeep Patriot is a life-saver. Professional and efficient work.", author: "Tim G.", vehicle: "Jeep Patriot" },
-    { quote: "Ethan's level of technical skill for my Dodge Durango was evident from the start. Perfect repair.", author: "Allen B.", vehicle: "Dodge Durango" },
-    { quote: "He fixed a difficult fuel trim issue on my Nissan Armada. Ethan's diagnostics are industry-leading.", author: "Victor O.", vehicle: "Nissan Armada" },
-    { quote: "Superb maintenance on my Toyota Highlander. The vehicle is running effortlessly now.", author: "Grace J.", vehicle: "Toyota Highlander" },
-    { quote: "Impressive diagnostic work on my Ford Escape. He pinpointed a transmission sensor issue quickly.", author: "Oliver K.", vehicle: "Ford Escape" },
-    { quote: "Top-tier service for my Subaru Crosstrek. He made sure everything was calibrated perfectly for winter.", author: "Brooke S.", vehicle: "Subaru Crosstrek" },
-    { quote: "Ethan's professionalism is unmatched. Handled the heavy maintenance on my GMC Yukon flawlessly.", author: "Samson A.", vehicle: "GMC Yukon" },
-    { quote: "Detailed work on my Kia Niro. He understands the complexities of the hybrid system completely.", author: "Elena M.", vehicle: "Kia Niro" },
-    { quote: "Fixed the brake pulsation on my Honda Insight. Smooth as silk now. Very precise work.", author: "Winston C.", vehicle: "Honda Insight" },
-    { quote: "He provided master-level service for my Nissan NV200 work van. Keeps my business on the move.", author: "Rick D.", vehicle: "Nissan NV200" },
-    { quote: "Professional and honest diagnostic check for my Chevrolet Blazer. I really appreciate his transparency.", author: "Mia L.", vehicle: "Chevrolet Blazer" },
-    { quote: "Great mobile technician for my Daily Ford Focus. He's efficient and very skilled mechanically.", author: "Quentin R.", vehicle: "Ford Focus" },
-    { quote: "He's been maintaining my Toyota Avalon for over a year now. It still runs like it did on day one.", author: "Louis P.", vehicle: "Toyota Avalon" },
-    { quote: "Reliable and expert repair of the steering in my Subaru Tribeca. Not an easy job, but Ethan nailed it.", author: "Valerie H.", vehicle: "Subaru Tribeca" },
-    { quote: "High-level technical skill on my Mazda 6. The electronic work was done with extreme precision.", author: "Barry G.", vehicle: "Mazda 6" },
-    { quote: "Ethan resolved a tricky idle issue on my Jeep Liberty. His diagnostic logic is very impressive.", author: "Caleb F.", vehicle: "Jeep Liberty" },
-    { quote: "Trustworthy and professional service for my Ford Maverick. He's my go-to for any mechanical need.", author: "Sasha N.", vehicle: "Ford Maverick" },
-    { quote: "Excellent work on the drivetrain of my Nissan Kicks. The car feels much more solid and responsive.", author: "Ivan S.", vehicle: "Nissan Kicks" },
-    { quote: "Professional maintenance for my Kia Carnival. He's very thorough and respectful of the vehicle.", author: "Tanya B.", vehicle: "Kia Carnival" },
-    { quote: "Fixed a recurring CEL on my Honda Ridgeline that baffled others. Ethan is a true master tech.", author: "Gordon M.", vehicle: "Honda Ridgeline" },
-    { quote: "Impressed by the master diagnostics on my Chevrolet Colorado. He found a faulty ground wire fast.", author: "Ulysses R.", vehicle: "Chevrolet Colorado" },
-    { quote: "Precise suspension repairs on my Toyota Venza. It honestly rides better now than when new.", author: "Pearl J.", vehicle: "Toyota Venza" },
-    { quote: "High-end mechanical care for my Subaru BRZ. He really understands enthusiast platforms.", author: "Zack T.", vehicle: "Subaru BRZ" },
-    { quote: "Ethan's level of diagnostic detail on my Volkswagen Passat is exactly what European cars need.", author: "Vanessa O.", vehicle: "VW Passat" },
-    { quote: "Reliable and expert service for my GMC Canyon. He always provides technical peace of mind.", author: "Marcus D.", vehicle: "GMC Canyon" },
-    { quote: "Masterful engine service on my Nissan Pathfinder. The performance gain is very noticeable.", author: "Sheila W.", vehicle: "Nissan Pathfinder" },
-    { quote: "Exceptional mobile work for my Ford Expedition. He replaced the water pump in my driveway. Master skill.", author: "Arnold G.", vehicle: "Ford Expedition" },
-    { quote: "Honest and thorough inspection of my Kia Cadenza. He pointed out exactly what was essential.", author: "Vera S.", vehicle: "Kia Cadenza" },
-    { quote: "He resolved a complex brake system error on my Toyota Mirai. Expertise you can trust.", author: "Liam F.", vehicle: "Toyota Mirai" },
-    { quote: "Quality mechanical maintenance for my Honda HR-V. Always professional and very efficient.", author: "Clara E.", vehicle: "Honda HR-V" },
-    { quote: "Expertise with the Subaru WRX is fantastic. He tuned the suspension for peak daily performance.", author: "Tyler B.", vehicle: "Subaru WRX" },
-    { quote: "Ethan's diagnostic scan of my Nissan Leaf was extremely deep. Very reassured by his tech knowledge.", author: "Julian R.", vehicle: "Nissan Leaf" },
-    { quote: "He did an incredible job on the clutch service for my Mazda MX-5. Perfect engagement and feel.", author: "Felix P.", vehicle: "Mazda Miata" },
-    { quote: "Master tech level quality for my Chevrolet Traverse. He fixed the AC system with total precision.", author: "Irene K.", vehicle: "Chevrolet Traverse" },
-    { quote: "Consistent and reliable service for my Ford Bronco. His mechanical integrity is outstanding.", author: "Bruce M.", vehicle: "Ford Bronco" },
-    { quote: "Highly proficient diagnostics for my Honda Prelude. He found a distributor issue immediately.", author: "Stanley H.", vehicle: "Honda Prelude" },
-    { quote: "Finalizing the year with a master service from Ethan for my Kia Stinger. It has never run better.", author: "Dominic L.", vehicle: "Kia Stinger" }
-  ];
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 3) % reviews.length);
-    }, 15000);
-    return () => clearInterval(timer);
-  }, [reviews.length]);
-
-  const visibleReviews = reviews.slice(currentIndex, currentIndex + 3);
-  // Ensure we always show 3 if we reach the end of the array
-  if (visibleReviews.length < 3) {
-    visibleReviews.push(...reviews.slice(0, 3 - visibleReviews.length));
-  }
-
-  return (
-    <section className="py-32 px-6 md:px-12 bg-black overflow-hidden">
-      <div className="container mx-auto max-w-7xl">
-        <div className="text-center mb-20">
-          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Verification</div>
-          <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase">
-            Client <span className="ice-highlight">Performance</span>
-          </h2>
-          <div className="mt-4 orbitron text-[8px] tracking-[0.3em] text-zinc-600 uppercase italic">Rotating Master Service Records</div>
-        </div>
-
-        <div className="relative h-[auto]">
-          <motion.div 
-            key={currentIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-          >
-            {visibleReviews.map((rv, idx) => (
-              <div 
-                key={`${currentIndex}-${idx}`}
-                className="p-10 rounded-[2.5rem] bg-zinc-900/50 border border-white/5 relative overflow-hidden group min-h-[320px] flex flex-col justify-between"
-              >
-                <div className="absolute top-0 left-0 w-1 h-full bg-accent-blue/10 group-hover:bg-accent-blue/40 transition-all duration-500" />
-                
-                <p className="text-lg text-white italic font-medium leading-relaxed mb-8 relative z-10">
-                  "{rv.quote}"
-                </p>
-                
-                <div className="flex items-center gap-4 border-t border-white/5 pt-6">
-                  <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center text-accent-blue border border-accent-blue/20">
-                    <User size={22} />
-                  </div>
-                  <div>
-                    <div className="orbitron text-[10px] font-black uppercase text-white tracking-widest">{rv.author}</div>
-                    <div className="orbitron text-[8px] tracking-[0.2em] text-accent-ice uppercase font-black italic">{rv.vehicle}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Progress Indicators */}
-          <div className="flex justify-center gap-2 mt-12">
-            {Array.from({ length: Math.ceil(reviews.length / 3) }).map((_, i) => (
-              <div 
-                key={i} 
-                className={`h-1 transition-all duration-500 rounded-full ${
-                  Math.floor(currentIndex / 3) === i ? 'w-8 bg-accent-blue' : 'w-2 bg-white/10'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function AuthorityGrid() {
   const brands = [
     "Porsche", "BMW", "Audi", "Mercedes-Benz", 
@@ -1521,6 +1438,60 @@ function AuthorityGrid() {
           <p className="text-zinc-700 text-[10px] orbitron font-black tracking-[0.3em] uppercase italic">
             Professional mechanical support for all major vehicle platforms
           </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ServiceArea() {
+  const cities = [
+    "Lompoc", "Santa Maria", "Orcutt", "Nipomo", 
+    "Arroyo Grande", "Grover Beach", "Pismo Beach", 
+    "San Luis Obispo", "Atascadero", "Templeton", "Paso Robles"
+  ];
+
+  return (
+    <section className="py-24 px-6 md:px-12 relative overflow-hidden bg-white/[0.02]">
+      <div className="container mx-auto max-w-7xl">
+        <div className="flex flex-col lg:flex-row items-center gap-16">
+          <div className="flex-1 space-y-8">
+            <div>
+              <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Regional Coverage</div>
+              <h2 className="orbitron text-4xl md:text-5xl font-black italic tracking-tighter text-glow uppercase leading-tight">
+                MOBILE <span className="ice-highlight">DISPATCH</span> <br />RANGE
+              </h2>
+            </div>
+            
+            <p className="text-zinc-400 text-lg italic leading-relaxed max-w-lg">
+              We provide master-level automotive support directly to your location throughout the Central Coast. Our mobile units are fully equipped for diagnostics, maintenance, and complex repairs.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              {cities.map((city, idx) => (
+                <div key={idx} className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-[10px] orbitron font-black tracking-widest text-zinc-500 hover:text-accent-blue hover:border-accent-blue transition-all cursor-default">
+                  {city}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex-1 relative">
+            <div className="aspect-square relative rounded-[3rem] overflow-hidden border border-white/10 group bg-zinc-900 flex items-center justify-center p-12">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,214,255,0.1)_0%,transparent_70%)]" />
+              <div className="relative z-10 text-center">
+                <div className="w-20 h-20 rounded-3xl bg-accent-blue/10 border border-accent-blue/30 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(52,214,255,0.2)]">
+                  <Globe size={40} className="text-accent-blue" />
+                </div>
+                <div className="orbitron text-3xl font-black italic text-white mb-2 uppercase">Central Coast</div>
+                <div className="orbitron text-xs tracking-[0.4em] text-accent-blue font-black uppercase">Elite Coverage</div>
+              </div>
+              
+              {/* Decorative Map Elements */}
+              <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-accent-blue shadow-[0_0_10px_rgba(52,214,255,1)] animate-ping" />
+              <div className="absolute bottom-1/3 right-1/4 w-2 h-2 rounded-full bg-accent-ice shadow-[0_0_10px_rgba(52,214,255,1)] animate-ping animation-delay-1000" />
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1656,7 +1627,7 @@ function Contact() {
                 <div className="orbitron text-3xl sm:text-4xl md:text-5xl font-black italic tracking-tighter mb-1">
                   1-805-588-8082
                 </div>
-                <div className="text-sm font-bold opacity-60 uppercase tracking-widest">Available for shop & mobile dispatch</div>
+                <div className="text-sm font-bold opacity-60 uppercase tracking-widest">Mobile Dispatch: Lompoc to Paso Robles</div>
               </div>
             </motion.a>
 
@@ -1703,7 +1674,7 @@ function Contact() {
   );
 }
 
-function Footer({ onNavigate }: { onNavigate: (view: View) => void }) {
+function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (view: View) => void }) {
   return (
     <footer className="px-6 md:px-12 py-20 bg-black/95 backdrop-blur-3xl border-t border-white/5 relative z-20">
       <div className="container mx-auto max-w-7xl">
@@ -1716,30 +1687,32 @@ function Footer({ onNavigate }: { onNavigate: (view: View) => void }) {
               Automotive Diagnostics · Repair · Maintenance
             </p>
             <div className="space-y-2 text-zinc-400 font-mono text-[10px] uppercase tracking-widest">
+              <p className="flex items-center gap-2 justify-center md:justify-start"><Globe size={12} className="text-accent-blue" /> Dispatch: Lompoc to Paso Robles</p>
               <p className="flex items-center gap-2 justify-center md:justify-start"><User size={12} className="text-accent-blue" /> Owner: Ethan Zandonatti</p>
               <p className="flex items-center gap-2 justify-center md:justify-start"><Phone size={12} className="text-accent-blue" /> 805-588-8082</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-12 orbitron text-[10px] tracking-[0.3em] font-black">
-            <button onClick={() => onNavigate('home')} className="text-zinc-500 hover:text-accent-blue transition-colors">Home</button>
-            <button onClick={() => onNavigate('catalog')} className="text-zinc-500 hover:text-accent-blue transition-colors">Services</button>
-            <button onClick={() => onNavigate('gallery')} className="text-zinc-500 hover:text-accent-blue transition-colors">Gallery</button>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 orbitron text-[10px] tracking-[0.3em] font-black">
+            <button onClick={() => onNavigate('home')} className="text-zinc-300 hover:text-accent-blue transition-colors uppercase cursor-pointer">Home</button>
+            <button onClick={() => onNavigate('catalog')} className="text-zinc-300 hover:text-accent-blue transition-colors uppercase cursor-pointer">Services</button>
+            <button onClick={() => onNavigate('gallery')} className="text-zinc-300 hover:text-accent-blue transition-colors uppercase cursor-pointer">Gallery</button>
             <button 
-              onClick={() => {
-                onNavigate('home');
-                setTimeout(() => {
-                  const el = document.getElementById('contact');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }} 
-              className="text-zinc-500 hover:text-accent-blue transition-colors"
+              onClick={() => onNavigate('contact')} 
+              className={`text-zinc-300 hover:text-accent-blue transition-colors uppercase cursor-pointer ${currentView === 'contact' ? 'text-accent-blue' : ''}`}
             >
               Contact
             </button>
           </div>
           
-          <div className="text-right">
+          <div className="flex flex-col items-end">
+            <div className="h-12 w-16 mb-4 opacity-40 hover:opacity-100 transition-opacity">
+              <img 
+                src="/motor-logo.png" 
+                alt="EZ Performance Footer Logo" 
+                className="w-full h-full object-contain grayscale"
+              />
+            </div>
             <div className="text-zinc-400 orbitron text-xs font-black italic mb-2 tracking-widest">Est. 2026</div>
             <p className="text-zinc-700 text-[10px] font-mono uppercase">
               © EZ PERFORMANCE. PHENOMENAL PRECISION.
@@ -1756,22 +1729,11 @@ function Footer({ onNavigate }: { onNavigate: (view: View) => void }) {
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [isLoading, setIsLoading] = useState(true);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   useEffect(() => {
-    async function testConnection() {
-      try {
-        console.log('Testing Firestore connection...');
-        await getDocFromServer(doc(db, 'test', 'connection'));
-        console.log('Firestore connection verified.');
-      } catch (error) {
-        if(error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration or network status.");
-        } else {
-          console.warn("Firestore connection test completed with non-critical result:", error);
-        }
-      }
-    }
-    testConnection();
+    // Local storage persistence or other initialization can go here
+    console.log('App initialized.');
   }, []);
 
   const handleNavigate = (view: View) => {
@@ -1796,7 +1758,13 @@ export default function App() {
             transition={{ duration: 0.8 }}
             className="relative z-10"
           >
-            <Navbar currentView={currentView} onNavigate={handleNavigate} />
+            <Navbar 
+              currentView={currentView} 
+              onNavigate={handleNavigate} 
+              onBookingOpen={() => setIsBookingOpen(true)} 
+            />
+            
+            <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} />
             
             <AnimatePresence mode="wait">
               {currentView === 'home' && (
@@ -1810,21 +1778,25 @@ export default function App() {
                   <Hero onNavigate={handleNavigate} />
                   <AuthorityGrid />
                   <Services onNavigate={handleNavigate} />
+                  <ServiceArea />
                   <Process />
-                  <Testimonials />
                   <FAQ />
-                  <Contact />
                 </motion.div>
               )}
               {currentView === 'catalog' && (
                 <Catalog onNavigate={handleNavigate} />
               )}
               {currentView === 'gallery' && (
-                <Gallery />
+                <Gallery onNavigate={handleNavigate} />
+              )}
+              {currentView === 'contact' && (
+                <div className="pt-20">
+                  <Contact />
+                </div>
               )}
             </AnimatePresence>
 
-            <Footer onNavigate={handleNavigate} />
+            <Footer currentView={currentView} onNavigate={handleNavigate} />
           </motion.div>
         )}
       </AnimatePresence>

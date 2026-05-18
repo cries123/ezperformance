@@ -13,7 +13,7 @@ async function startServer() {
 
   // API Routes
   app.post("/api/notify", async (req, res) => {
-    const { customerName, customerPhone, vehicleInfo, serviceDescription } = req.body;
+    const { name, phone, vehicle, service, priceLabel } = req.body;
 
     const discordUrl = process.env.DISCORD_WEBHOOK_URL;
 
@@ -27,17 +27,18 @@ async function startServer() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: "🏎️ **NEW BOOKING REQUEST**",
+          content: "🏎️ **NEW BOOKING REQUEST** @everyone",
           embeds: [{
-            title: "Project Engagement",
+            title: "Project Engagement Logged",
             color: 3447003, // Accent blue hex
             fields: [
-              { name: "Customer", value: customerName, inline: true },
-              { name: "Phone", value: customerPhone, inline: true },
-              { name: "Vehicle", value: vehicleInfo },
-              { name: "Service Description", value: serviceDescription }
+              { name: "Customer", value: name || "N/A", inline: true },
+              { name: "Phone", value: phone || "N/A", inline: true },
+              { name: "Vehicle", value: vehicle || "N/A" },
+              { name: "Service", value: service || "N/A" },
+              { name: "Estimated Total", value: priceLabel || "Custom Quote" }
             ],
-            footer: { text: "Precision Mechanical Engine" },
+            footer: { text: "Precision Mechanical Engine • Booking Terminal v2" },
             timestamp: new Date().toISOString()
           }]
         })
