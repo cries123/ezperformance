@@ -11,6 +11,8 @@ import {
   Cpu, 
   ExternalLink, 
   Globe, 
+  MapPin,
+  Layout,
   Layers, 
   Menu, 
   MessageSquare, 
@@ -197,11 +199,22 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       localStorage.setItem(`booking_${Date.now()}`, JSON.stringify(formData));
       
       // Notify endpoint
-      fetch('/api/notify', {
+      // We try both the relative path and a more explicit one if needed
+      const response = await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
-      }).catch(err => console.warn("Notification trigger failed:", err));
+      });
+
+      if (!response.ok) {
+        console.warn("Express endpoint failed, trying direct function route...");
+        // Fallback for some hosting configurations
+        await fetch('/.netlify/functions/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }
 
       setIsSuccess(true);
     } catch (error) {
@@ -1084,6 +1097,12 @@ function Hero({ onNavigate }: { onNavigate: (view: View) => void }) {
           <div className="flex flex-wrap gap-4 mb-12">
             <div className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-accent-blue hover:border-accent-blue transition-all">
               <div className="w-6 h-6 rounded-lg bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20">
+                <MapPin size={14} />
+              </div>
+              SHOP & MOBILE SERVICE
+            </div>
+            <div className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-zinc-400 hover:border-accent-blue transition-all">
+              <div className="w-6 h-6 rounded-lg bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20">
                 <Globe size={14} />
               </div>
               SERVING LOMPOC TO PASO ROBLES
@@ -1188,8 +1207,8 @@ function Services({ onNavigate }: { onNavigate: (view: View) => void }) {
     },
     {
       icon: Smartphone,
-      title: "MOBILE SERVICE",
-      description: "Dispatch covering Lompoc to Paso Robles. Skip the waiting room—we bring master-level expertise right to your driveway.",
+      title: "SHOP & MOBILE DISPATCH",
+      description: "Whether you visit our shop for complex repairs or need mobile dispatch from Lompoc to Paso Robles, we bring master-level expertise to you.",
       isSpecial: true
     }
   ];
