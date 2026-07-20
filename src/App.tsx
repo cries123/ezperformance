@@ -31,6 +31,7 @@ import {
   Car,
   Calendar,
   Clock,
+  ImageIcon,
   User,
   X,
   ChevronRight,
@@ -40,6 +41,7 @@ import {
   ShieldCheck,
   Disc
 } from 'lucide-react';
+import { type View, viewFromPath, pathForView, updatePageSeo } from './seo';
 // import { 
 //   collection, 
 //   addDoc, 
@@ -676,54 +678,7 @@ function IgnitionScreen({ onComplete }: { onComplete: () => void; key?: React.Ke
   );
 }
 
-type View = 'home' | 'catalog' | 'gallery' | 'contact';
-
 function Gallery({ onNavigate }: { onNavigate: (view: View) => void }) {
-  const projects = [
-    {
-      title: "Porsche 911 GT3",
-      category: "Euro Performance",
-      image: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?q=80&w=2070&auto=format&fit=crop",
-      description: "Stage 2 tuning, custom exhaust, and suspension geometry optimization.",
-      stats: { hp: "+45 HP", torque: "+30 lb-ft", weight: "-12 lbs" }
-    },
-    {
-      title: "Nissan GT-R R35",
-      category: "JDM Precision",
-      image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=2070&auto=format&fit=crop",
-      description: "Dual-clutch transmission rebuild and cooling system overhauls.",
-      stats: { hp: "850 WHP", torque: "720 lb-ft", weight: "Stock" }
-    },
-    {
-      title: "McLaren 720S",
-      category: "Exotic Maintenance",
-      image: "https://images.unsplash.com/photo-1621135802920-133df287f89c?q=80&w=2070&auto=format&fit=crop",
-      description: "Annual service, precision alignment, and brake system restoration.",
-      stats: { hp: "Factory", torque: "Factory", weight: "Perfect" }
-    },
-    {
-      title: "BMW M2 Competition",
-      category: "Track Setup",
-      image: "https://images.unsplash.com/photo-1617814076367-b759c7d6274a?q=80&w=2169&auto=format&fit=crop",
-      description: "Full track prep including cage installation and fire suppression.",
-      stats: { hp: "+60 HP", torque: "+45 lb-ft", weight: "-80 lbs" }
-    },
-    {
-      title: "Engine Calibration",
-      category: "Diagnostics",
-      image: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?q=80&w=2106&auto=format&fit=crop",
-      description: "Master level diagnostic session resolving complex phantom DTCs.",
-      stats: { hp: "Optimized", torque: "Linear", weight: "N/A" }
-    },
-    {
-      title: "Audi RS6 Avant",
-      category: "Performance Wagon",
-      image: "https://images.unsplash.com/photo-1610502860263-503487377bc3?q=80&w=2070&auto=format&fit=crop",
-      description: "Intercooler upgrades and TCU mapping for rapid response.",
-      stats: { hp: "700 HP", torque: "650 lb-ft", weight: "-20 lbs" }
-    }
-  ];
-
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -731,8 +686,8 @@ function Gallery({ onNavigate }: { onNavigate: (view: View) => void }) {
       exit={{ opacity: 0 }}
       className="pt-32 pb-24 px-6 md:px-12 relative min-h-screen"
     >
-      <div className="container mx-auto max-w-7xl">
-        <div className="mb-20 text-center">
+      <div className="container mx-auto max-w-4xl">
+        <div className="mb-16 text-center">
           <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Project Archives</div>
           <h1 className="orbitron text-5xl md:text-7xl font-black italic mb-6 tracking-tight text-glow uppercase">
             SELECTED <span className="ice-highlight">WORK</span>
@@ -743,62 +698,32 @@ function Gallery({ onNavigate }: { onNavigate: (view: View) => void }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.map((project, idx) => (
-            <motion.div 
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="group relative h-[450px] rounded-[2.5rem] overflow-hidden border border-white/10 hover:border-accent-blue/50 transition-all duration-500"
-            >
-              <img 
-                src={project.image} 
-                alt={project.title}
-                className="absolute inset-0 w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
-              
-              <div className="absolute inset-0 p-8 flex flex-col justify-end">
-                <div className="orbitron text-[10px] font-black tracking-widest text-accent-blue mb-2 uppercase translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                  {project.category}
-                </div>
-                <h3 className="orbitron text-2xl font-black italic text-white mb-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-75 uppercase">
-                  {project.title}
-                </h3>
-                <p className="text-zinc-400 text-sm italic mb-6 line-clamp-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-150">
-                  {project.description}
-                </p>
-                
-                <div className="flex gap-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-200">
-                  {Object.entries(project.stats).map(([label, val]) => (
-                    <div key={label} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg px-3 py-2 text-center flex-1">
-                      <div className="orbitron text-[7px] text-zinc-500 uppercase tracking-widest leading-none mb-1">{label}</div>
-                      <div className="text-[10px] font-black text-accent-ice italic uppercase">{val}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="mt-20 glass p-12 rounded-[3rem] text-center bg-accent-blue/5 border-accent-blue/20">
-          <h3 className="orbitron text-2xl font-black italic mb-6 uppercase">Ready for your transformation?</h3>
-          <p className="text-zinc-400 italic mb-8 max-w-xl mx-auto">From subtle refinements to extreme builds, your project deserves master-level execution.</p>
-          <div className="flex flex-wrap justify-center gap-6 font-mono text-[10px] uppercase tracking-widest text-accent-blue mb-8">
-            <span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-accent-blue" /> European Platforms</span>
-            <span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-accent-blue" /> JDM Tuning</span>
-            <span className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-accent-blue" /> Exotic Service</span>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="glass p-16 md:p-24 rounded-[3rem] text-center border border-white/10 bg-accent-blue/5"
+        >
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-accent-blue/10 border border-accent-blue/20 mb-8">
+            <ImageIcon size={36} className="text-accent-blue" />
           </div>
+          <div className="orbitron text-accent-blue text-xs font-black tracking-[0.5em] mb-4 uppercase flex items-center justify-center gap-3">
+            <Clock size={14} />
+            Coming Soon
+          </div>
+          <h2 className="orbitron text-3xl md:text-5xl font-black italic mb-6 uppercase text-white">
+            Gallery <span className="ice-highlight">In Progress</span>
+          </h2>
+          <p className="text-zinc-400 text-lg italic font-medium max-w-xl mx-auto mb-10">
+            We&apos;re putting together a showcase of our latest builds, diagnostics, and performance work. Check back soon.
+          </p>
           <button 
             onClick={() => onNavigate('contact')}
             className="gradient-btn px-12 py-5 rounded-xl orbitron font-black text-xl italic text-black uppercase"
           >
-            Start Project
+            Start Your Project
           </button>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -1746,16 +1671,28 @@ function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (v
 // --- Main App ---
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<View>('home');
+  const [currentView, setCurrentView] = useState<View>(() => viewFromPath(window.location.pathname));
   const [isLoading, setIsLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   useEffect(() => {
-    // Local storage persistence or other initialization can go here
-    console.log('App initialized.');
+    updatePageSeo(currentView);
+  }, [currentView]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setCurrentView(viewFromPath(window.location.pathname));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const handleNavigate = (view: View) => {
+    const path = pathForView(view);
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
