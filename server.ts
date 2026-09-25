@@ -68,7 +68,7 @@ async function startServer() {
     // extensions lets /services serve services.html, matching Netlify's pretty URLs
     app.use(express.static(distPath, { extensions: ['html'] }));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      res.status(404).sendFile(path.join(distPath, '404.html'));
     });
   }
 

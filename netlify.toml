@@ -13,9 +13,5 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Single-page app fallback so unknown paths still load the site.
-# Real files (services.html, robots.txt, ...) are served first.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# No catch-all redirect: real pages are services.html, contact.html, etc.
+# Anything else gets Netlify's automatic 404.html with a real 404 status.

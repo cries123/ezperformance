@@ -30,4 +30,11 @@ Pushing to `main` deploys on Netlify (`netlify.toml`). In Netlify's environment 
 - `DISCORD_WEBHOOK_URL`: required for booking notifications.
 - `VITE_SITE_URL`: optional. Defaults to the Netlify site's primary domain.
 
-The build also writes `services.html`, `contact.html`, `gallery.html`, `robots.txt` and `sitemap.xml` into `dist/`.
+The build also writes `services.html`, `contact.html`, `gallery.html`, `404.html`, `robots.txt` and `sitemap.xml` into `dist/`. Unknown URLs get `404.html` with a real 404 status.
+
+## Updating content
+
+- **Ethan's photo:** add the photo to `public/` (e.g. `public/ethan.jpg`, portrait, about 600×750) and change `ETHAN_PHOTO` in `src/App.tsx` to `'/ethan.jpg'`.
+- **Reviews:** add real customer reviews (with their permission) to the `REVIEWS` list in `src/App.tsx`. The section shows "Reviews Coming Soon" until the list has entries. Never add made-up reviews.
+- **Leave a Review button:** paste the review link from your Google Business Profile into `REVIEW_URL` in `src/App.tsx`.
+- **Call hours:** `CALL_HOURS` in `src/seo.ts` (also update `openingHoursSpecification` there).

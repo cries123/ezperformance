@@ -25,11 +25,15 @@ import {
   X,
   ChevronRight,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Star,
+  Clock,
+  CreditCard,
+  Truck
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { ROUTES, PHONE_DISPLAY, PHONE_E164, SERVICE_AREA, applySeo, viewFromPath, type View } from './seo';
+import { ROUTES, PHONE_DISPLAY, PHONE_E164, CALL_HOURS, applySeo, viewFromPath, type View } from './seo';
 
 // --- Utils ---
 function cn(...inputs: ClassValue[]) {
@@ -1477,16 +1481,34 @@ function AuthorityGrid() {
   );
 }
 
+const SERVICE_REGIONS = [
+  {
+    name: "Santa Maria Valley & Lompoc",
+    blurb: "Shop repairs and mobile service for drivers in Santa Maria, Orcutt and Lompoc.",
+    towns: ["Santa Maria", "Orcutt", "Lompoc"]
+  },
+  {
+    name: "Nipomo & the Five Cities",
+    blurb: "Mobile maintenance, diagnostics and repairs across Nipomo, Arroyo Grande, Grover Beach and Pismo Beach.",
+    towns: ["Nipomo", "Arroyo Grande", "Grover Beach", "Pismo Beach"]
+  },
+  {
+    name: "San Luis Obispo & North County",
+    blurb: "Service in San Luis Obispo and up the 101 to Atascadero, Templeton and Paso Robles.",
+    towns: ["San Luis Obispo", "Atascadero", "Templeton", "Paso Robles"]
+  }
+];
+
 function ServiceArea() {
   return (
     <section className="py-24 px-6 md:px-12 relative overflow-hidden bg-white/[0.02]">
       <div className="container mx-auto max-w-7xl">
-        <div className="flex flex-col lg:flex-row items-center gap-16">
+        <div className="flex flex-col lg:flex-row items-start gap-16">
           <div className="flex-1 space-y-8">
             <div>
               <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Service Area</div>
               <h2 className="orbitron text-4xl md:text-5xl font-black italic tracking-tighter text-glow uppercase leading-tight">
-                MOBILE <span className="ice-highlight">SERVICE</span> <br />AREA
+                AREAS WE <span className="ice-highlight">SERVE</span>
               </h2>
             </div>
 
@@ -1494,34 +1516,288 @@ function ServiceArea() {
               We bring diagnostics, maintenance and many repairs to your home or work anywhere on the Central Coast. Bigger jobs are done at our shop.
             </p>
 
-            <ul className="flex flex-wrap gap-3">
-              {SERVICE_AREA.map(city => (
-                <li key={city} className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs orbitron font-black tracking-widest text-zinc-400 hover:text-accent-blue hover:border-accent-blue transition-all cursor-default">
-                  {city}
-                </li>
-              ))}
-            </ul>
+            <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
+              Don't see your town? Call {PHONE_DISPLAY} and ask. A trip fee may apply for some mobile visits.
+            </p>
           </div>
 
-          <div className="flex-1 relative">
-            <div className="aspect-square relative rounded-[3rem] overflow-hidden border border-white/10 group bg-zinc-900 flex items-center justify-center p-12">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,214,255,0.1)_0%,transparent_70%)]" />
-              <div className="relative z-10 text-center">
-                <div className="w-20 h-20 rounded-3xl bg-accent-blue/10 border border-accent-blue/30 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(52,214,255,0.2)]">
-                  <Globe size={40} className="text-accent-blue" aria-hidden="true" />
-                </div>
-                <div className="orbitron text-3xl font-black italic text-white mb-2 uppercase">Central Coast</div>
-                <div className="orbitron text-xs tracking-[0.2em] text-accent-blue font-black uppercase">Lompoc to Paso Robles</div>
+          <div className="flex-1 w-full space-y-4">
+            {SERVICE_REGIONS.map(region => (
+              <div key={region.name} className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                <h3 className="orbitron text-lg font-black italic text-white mb-2 uppercase flex items-center gap-2">
+                  <MapPin size={18} className="text-accent-blue shrink-0" aria-hidden="true" />
+                  {region.name}
+                </h3>
+                <p className="text-zinc-300 text-sm leading-relaxed mb-4">{region.blurb}</p>
+                <ul className="flex flex-wrap gap-2">
+                  {region.towns.map(town => (
+                    <li key={town} className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs font-semibold tracking-wide text-zinc-300">
+                      {town}
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Decorative Map Elements */}
-              <div aria-hidden="true" className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-accent-blue shadow-[0_0_10px_rgba(52,214,255,1)] animate-ping" />
-              <div aria-hidden="true" className="absolute bottom-1/3 right-1/4 w-2 h-2 rounded-full bg-accent-ice shadow-[0_0_10px_rgba(52,214,255,1)] animate-ping animation-delay-1000" />
-            </div>
+            ))}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+// Replace with a real photo: drop e.g. ethan.jpg into /public and point this at it.
+const ETHAN_PHOTO = '/ethan-placeholder.svg';
+
+function About() {
+  const facts = [
+    { value: "15+", label: "Years of experience" },
+    { value: "ASE", label: "Certified Master Tech" },
+    { value: "Shop", label: "& mobile service" }
+  ];
+
+  return (
+    <section id="about" className="py-32 px-6 md:px-12 relative overflow-hidden">
+      <div className="container mx-auto max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="lg:col-span-2 relative max-w-sm mx-auto w-full"
+          >
+            <div className="absolute inset-0 bg-accent-blue/10 blur-[80px] rounded-full -z-10" aria-hidden="true" />
+            <img
+              src={ETHAN_PHOTO}
+              alt="Ethan Zandonatti, owner of EZ Performance"
+              width={600}
+              height={750}
+              loading="lazy"
+              className="w-full aspect-[4/5] object-cover rounded-[2.5rem] border border-accent-blue/20 shadow-2xl"
+            />
+          </motion.div>
+
+          <div className="lg:col-span-3 space-y-8">
+            <div>
+              <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">About</div>
+              <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase leading-tight">
+                Meet <span className="ice-highlight">Ethan</span>
+              </h2>
+            </div>
+            <div className="space-y-5 text-zinc-300 text-lg leading-relaxed">
+              <p>
+                EZ Performance is owned and run by Ethan Zandonatti, an ASE Certified Master Technician with more than 15 years of experience working on cars and trucks.
+              </p>
+              <p>
+                When you call, you talk to Ethan. He diagnoses the problem, explains it in plain terms, gives you the price up front, and does the work himself, at the shop or at your place anywhere from Lompoc to Paso Robles.
+              </p>
+            </div>
+            <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+              {facts.map(fact => (
+                <div key={fact.label} className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
+                  <dt className="sr-only">{fact.label}</dt>
+                  <dd className="orbitron text-2xl sm:text-3xl font-black italic text-accent-blue">{fact.value}</dd>
+                  <dd className="text-xs sm:text-sm text-zinc-300 mt-1" aria-hidden="true">{fact.label}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Add real customer reviews here (with permission). Example format:
+// { name: "Maria G.", town: "Nipomo", service: "Brake Pad & Rotor Replacement", text: "..." }
+// The section shows "coming soon" until this list has entries. Never add made-up reviews.
+const REVIEWS: { name: string; town?: string; service?: string; text: string }[] = [];
+
+// Paste the "Ask for reviews" link from your Google Business Profile here to show a Leave a Review button.
+const REVIEW_URL = '';
+
+function Reviews() {
+  return (
+    <section id="reviews" className="py-24 px-6 md:px-12 bg-white/[0.02] border-y border-white/5">
+      <div className="container mx-auto max-w-6xl">
+        <div className="text-center mb-16">
+          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Reviews</div>
+          <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase">
+            What Customers <span className="ice-highlight">Say</span>
+          </h2>
+        </div>
+
+        {REVIEWS.length > 0 ? (
+          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {REVIEWS.map(review => (
+              <li key={review.name + review.text.slice(0, 20)} className="p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col">
+                <div className="flex gap-1 mb-4 text-accent-blue" aria-hidden="true">
+                  {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={16} fill="currentColor" />)}
+                </div>
+                <blockquote className="text-zinc-200 leading-relaxed flex-1">"{review.text}"</blockquote>
+                <div className="mt-6 text-sm">
+                  <div className="font-bold text-white">{review.name}</div>
+                  {(review.town || review.service) && (
+                    <div className="text-zinc-400">{[review.service, review.town].filter(Boolean).join(' · ')}</div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="max-w-2xl mx-auto text-center p-10 rounded-3xl bg-white/5 border border-white/10">
+            <div className="flex justify-center gap-1 mb-6 text-accent-blue" aria-hidden="true">
+              {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={22} />)}
+            </div>
+            <h3 className="orbitron text-2xl font-black italic text-white uppercase mb-3">Reviews Coming Soon</h3>
+            <p className="text-zinc-300 leading-relaxed">
+              We're just getting started collecting online reviews. Had work done by EZ Performance? We'd love to hear how it went.
+            </p>
+          </div>
+        )}
+
+        {REVIEW_URL && (
+          <div className="text-center mt-10">
+            <a
+              href={REVIEW_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block frost-outline px-10 py-4 font-black rounded-full orbitron text-xs tracking-[0.2em] uppercase"
+            >
+              Leave a Review
+            </a>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function GoodToKnow() {
+  const items = [
+    {
+      icon: Clock,
+      title: "Call Hours",
+      body: <>{CALL_HOURS}. Call <a href={`tel:${PHONE_E164}`} className="text-accent-blue hover:underline whitespace-nowrap">{PHONE_DISPLAY}</a> or book online anytime.</>
+    },
+    {
+      icon: CreditCard,
+      title: "Payment",
+      body: <>Cash, debit cards, tap to pay, and credit cards (a card processing fee applies).</>
+    },
+    {
+      icon: Truck,
+      title: "Mobile Visits",
+      body: <>A trip fee may apply for some mobile visits depending on location. Call and we'll let you know before we head out.</>
+    },
+    {
+      icon: MapPin,
+      title: "Shop Location",
+      body: <>Our shop address is shared when your appointment is confirmed.</>
+    }
+  ];
+
+  return (
+    <section id="info" className="py-24 px-6 md:px-12">
+      <div className="container mx-auto max-w-6xl">
+        <div className="text-center mb-16">
+          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Good to Know</div>
+          <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase">
+            Hours & <span className="ice-highlight">Payment</span>
+          </h2>
+        </div>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {items.map(item => (
+            <li key={item.title} className="p-8 rounded-3xl bg-white/5 border border-white/10">
+              <div className="w-12 h-12 rounded-2xl bg-accent-blue/10 border border-accent-blue/20 flex items-center justify-center mb-5">
+                <item.icon size={22} className="text-accent-blue" aria-hidden="true" />
+              </div>
+              <h3 className="orbitron text-lg font-black italic text-white uppercase mb-2">{item.title}</h3>
+              <p className="text-zinc-300 text-sm leading-relaxed">{item.body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function NotFound({ onNavigate }: { onNavigate: (view: View) => void; key?: React.Key }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="pt-32 pb-24 px-6 md:px-12 relative min-h-screen flex items-center justify-center"
+    >
+      <div className="text-center max-w-xl">
+        <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Error 404</div>
+        <h1 className="orbitron text-5xl md:text-7xl font-black italic tracking-tight text-glow uppercase mb-6">
+          Page Not <span className="ice-highlight">Found</span>
+        </h1>
+        <p className="text-zinc-300 text-lg mb-10">
+          That page doesn't exist or has moved. Try one of these instead:
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <RouteLink
+            view="home"
+            onNavigate={onNavigate}
+            className="gradient-btn px-10 py-4 rounded-xl orbitron font-black text-black uppercase italic"
+          >
+            Go Home
+          </RouteLink>
+          <RouteLink
+            view="catalog"
+            onNavigate={onNavigate}
+            className="frost-outline px-10 py-4 rounded-xl orbitron font-black uppercase italic"
+          >
+            Services & Prices
+          </RouteLink>
+        </div>
+        <p className="text-zinc-400 mt-10">
+          Or call <a href={`tel:${PHONE_E164}`} className="text-accent-blue hover:underline whitespace-nowrap">{PHONE_DISPLAY}</a>
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+// Always-visible call button: a bottom bar on phones/tablets, a floating pill on desktop.
+function CallButton({ onBookingOpen }: { onBookingOpen: () => void }) {
+  return (
+    <>
+      <div
+        role="region"
+        aria-label="Quick contact"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-black/90 backdrop-blur-md border-t border-white/10 flex gap-3"
+      >
+        <a
+          href={`tel:${PHONE_E164}`}
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white text-black font-bold"
+        >
+          <Phone size={18} aria-hidden="true" /> Call Now
+        </a>
+        <button
+          type="button"
+          onClick={onBookingOpen}
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl gradient-btn text-black font-bold"
+        >
+          <Calendar size={18} aria-hidden="true" /> Book Online
+        </button>
+      </div>
+
+      <a
+        href={`tel:${PHONE_E164}`}
+        className="hidden lg:flex fixed bottom-6 right-6 z-40 items-center gap-3 pl-4 pr-6 py-3 rounded-full bg-white text-black font-bold shadow-[0_0_30px_rgba(52,214,255,0.35)] hover:scale-105 transition-transform"
+      >
+        <span className="w-9 h-9 rounded-full bg-black text-accent-blue flex items-center justify-center">
+          <Phone size={18} aria-hidden="true" />
+        </span>
+        <span className="flex flex-col leading-tight">
+          <span className="text-[11px] uppercase tracking-wider text-zinc-600">Call {CALL_HOURS.replace('Every day, ', 'daily ')}</span>
+          <span>{PHONE_DISPLAY}</span>
+        </span>
+      </a>
+    </>
   );
 }
 
@@ -1712,7 +1988,7 @@ function Contact({ onBookingOpen }: { onBookingOpen: () => void }) {
 
 function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (view: View) => void }) {
   return (
-    <footer className="px-6 md:px-12 py-20 bg-black/95 backdrop-blur-3xl border-t border-white/5 relative z-20">
+    <footer className="px-6 md:px-12 pt-20 pb-36 lg:pb-20 bg-black/95 backdrop-blur-3xl border-t border-white/5 relative z-20">
       <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left mb-16">
           <div className="max-w-sm">
@@ -1726,6 +2002,7 @@ function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (v
               <p className="flex items-center gap-2 justify-center md:justify-start"><Globe size={12} className="text-accent-blue" aria-hidden="true" /> Service area: Lompoc to Paso Robles</p>
               <p className="flex items-center gap-2 justify-center md:justify-start"><User size={12} className="text-accent-blue" aria-hidden="true" /> Owner: Ethan Zandonatti</p>
               <p className="flex items-center gap-2 justify-center md:justify-start"><Phone size={12} className="text-accent-blue" aria-hidden="true" /> <a href={`tel:${PHONE_E164}`} className="hover:text-accent-blue transition-colors">{PHONE_DISPLAY}</a></p>
+              <p className="flex items-center gap-2 justify-center md:justify-start"><Clock size={12} className="text-accent-blue" aria-hidden="true" /> Calls: {CALL_HOURS}</p>
             </div>
           </div>
 
@@ -1769,9 +2046,12 @@ function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (v
 
 const INTRO_SEEN_KEY = 'ez-intro-seen';
 
-// The intro plays once per browser session, and never for visitors who prefer reduced motion.
+// The intro plays once per browser session on desktop only (phones go straight to the site),
+// and never for visitors who prefer reduced motion. 1024px matches Tailwind's lg breakpoint.
 function shouldShowIntro() {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
+  if (!window.matchMedia?.('(min-width: 1024px)').matches) return false;
+  if (viewFromPath(window.location.pathname) === 'notfound') return false;
   try {
     return sessionStorage.getItem(INTRO_SEEN_KEY) !== '1';
   } catch {
@@ -1853,10 +2133,16 @@ export default function App() {
                   <Hero onNavigate={handleNavigate} />
                   <AuthorityGrid />
                   <Services onNavigate={handleNavigate} />
+                  <About />
                   <ServiceArea />
                   <Process />
+                  <Reviews />
+                  <GoodToKnow />
                   <FAQ />
                 </motion.div>
+              )}
+              {currentView === 'notfound' && (
+                <NotFound key="notfound" onNavigate={handleNavigate} />
               )}
               {currentView === 'catalog' && (
                 <Catalog key="catalog" onNavigate={handleNavigate} />
@@ -1867,12 +2153,14 @@ export default function App() {
               {currentView === 'contact' && (
                 <div key="contact" className="pt-20">
                   <Contact onBookingOpen={() => setIsBookingOpen(true)} />
+                  <GoodToKnow />
                 </div>
               )}
             </AnimatePresence>
           </main>
 
           <Footer currentView={currentView} onNavigate={handleNavigate} />
+          <CallButton onBookingOpen={() => setIsBookingOpen(true)} />
         </div>
       </div>
     </MotionConfig>

@@ -2,11 +2,12 @@
 // vite.config.ts (static per-route HTML, robots.txt and sitemap.xml at build time).
 // Keep this file free of top-level DOM access so it can be imported by Node.
 
-export type View = 'home' | 'catalog' | 'gallery' | 'contact';
+export type View = 'home' | 'catalog' | 'gallery' | 'contact' | 'notfound';
 
 export const SITE_NAME = 'EZ Performance';
 export const PHONE_DISPLAY = '805-588-8082';
 export const PHONE_E164 = '+18055888082';
+export const CALL_HOURS = 'Every day, 8am – 7pm';
 
 export const SERVICE_AREA = [
   'Lompoc', 'Santa Maria', 'Orcutt', 'Nipomo',
@@ -42,13 +43,19 @@ export const ROUTES: Record<View, RouteSeo> = {
     path: '/contact',
     title: 'Contact & Booking | EZ Performance',
     description: `Call ${PHONE_DISPLAY} or book online. Shop and mobile service from Lompoc to Paso Robles with same-day response.`
+  },
+  notfound: {
+    path: '/404',
+    title: 'Page Not Found | EZ Performance',
+    description: "That page doesn't exist. Head back to EZ Performance for auto diagnostics, repair and maintenance on the Central Coast.",
+    noindex: true
   }
 };
 
 export function viewFromPath(pathname: string): View {
-  const clean = pathname.replace(/\.html$/, '').replace(/\/+$/, '') || '/';
+  const clean = pathname.replace(/\.html$/, '').replace(/\/index$/, '').replace(/\/+$/, '') || '/';
   const match = (Object.keys(ROUTES) as View[]).find(v => ROUTES[v].path === clean);
-  return match ?? 'home';
+  return match ?? 'notfound';
 }
 
 function absoluteUrl(siteUrl: string, path: string) {
@@ -71,7 +78,14 @@ function structuredData(siteUrl: string) {
     description: ROUTES.home.description,
     ...(siteUrl && { url: `${siteUrl}/`, image: `${siteUrl}/motor-logo.png` }),
     telephone: PHONE_E164,
-    founder: { '@type': 'Person', name: 'Ethan Zandonatti' },
+    founder: { '@type': 'Person', name: 'Ethan Zandonatti', jobTitle: 'ASE Certified Master Technician' },
+    openingHoursSpecification: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      opens: '08:00',
+      closes: '19:00'
+    },
+    paymentAccepted: 'Cash, Debit Card, Credit Card, Contactless Payment',
     areaServed: SERVICE_AREA.map(name => ({ '@type': 'City', name: `${name}, CA` }))
   };
 }
@@ -86,7 +100,7 @@ export function renderSeoHead(view: View, siteUrl: string) {
     `<title>${escapeHtml(route.title)}</title>`,
     `<meta name="description" content="${escapeHtml(route.description)}" />`,
     route.noindex ? `<meta name="robots" content="noindex" />` : '',
-    siteUrl ? `<link rel="canonical" href="${url}" />` : '',
+    siteUrl && !route.noindex ? `<link rel="canonical" href="${url}" />` : '',
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:title" content="${escapeHtml(route.title)}" />`,
@@ -115,7 +129,7 @@ export function applySeo(view: View, siteUrl: string) {
   setMeta('meta[property="og:title"]', 'content', route.title);
   setMeta('meta[property="og:description"]', 'content', route.description);
   setMeta('meta[property="og:url"]', 'content', url);
-  setMeta('link[rel="canonical"]', 'href', url);
+  if (!route.noindex) setMeta('link[rel="canonical"]', 'href', url);
 
   let robots = document.head.querySelector('meta[name="robots"]');
   if (route.noindex && !robots) {
