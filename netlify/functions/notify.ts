@@ -13,7 +13,7 @@ export const handler: Handler = async (event, context) => {
     if (!discordUrl) {
       console.warn("DISCORD_WEBHOOK_URL not found in Netlify environment variables.");
       return {
-        statusCode: 200,
+        statusCode: 503,
         body: JSON.stringify({ success: false, message: "Webhook URL not configured on Netlify" }),
       };
     }

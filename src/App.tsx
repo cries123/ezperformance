@@ -242,12 +242,13 @@ const PHASES = [
 // --- Components ---
 
 const inputClass = "w-full bg-white/3 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-500 focus:border-accent-blue focus:bg-white/5 focus:outline-hidden transition-all text-sm font-medium";
-const labelClass = "block orbitron text-[10px] tracking-widest text-zinc-400 uppercase px-1";
+const labelClass = "block text-xs font-semibold tracking-wider text-zinc-300 uppercase px-1";
 
 function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isError, setIsError] = useState(false);
   const dialogRef = useDialog(isOpen, onClose);
 
   const [formData, setFormData] = useState({
@@ -261,34 +262,36 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
   const isCustom = formData.service === CUSTOM_SERVICE.name;
 
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  // True only when the endpoint confirms the Discord message went through.
+  const sendTo = async (url: string) => {
     try {
-      localStorage.setItem(`booking_${Date.now()}`, JSON.stringify(formData));
-
-      const response = await fetch('/api/notify', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
-      if (!response.ok) {
-        console.warn("Express endpoint failed, trying direct function route...");
-        // Fallback for some hosting configurations
-        await fetch('/.netlify/functions/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      }
-
-      setIsSuccess(true);
+      if (!response.ok) return false;
+      const result = await response.json().catch(() => null);
+      return result?.success === true;
     } catch (error) {
-      console.error('Booking Error:', error);
-    } finally {
-      setIsSubmitting(false);
+      console.error(`Booking request to ${url} failed:`, error);
+      return false;
+    }
+  };
+
+  const handleBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setIsError(false);
+
+    // Fallback route covers hosting setups where the /api redirect isn't in place
+    const sent = await sendTo('/api/notify') || await sendTo('/.netlify/functions/notify');
+
+    setIsSubmitting(false);
+    if (sent) {
+      setIsSuccess(true);
+    } else {
+      setIsError(true);
     }
   };
 
@@ -388,7 +391,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             <div className="flex-1 flex flex-col md:flex-row min-h-0">
               {/* Desktop Progress Rail */}
               <div className="w-64 bg-black/40 p-8 border-r border-white/5 hidden md:block" aria-hidden="true">
-                <div className="orbitron text-[10px] tracking-[0.5em] text-accent-blue mb-12 uppercase">Book a Service</div>
+                <div className="orbitron text-xs tracking-[0.2em] text-accent-blue mb-12 uppercase">Book a Service</div>
                 <div className="space-y-8">
                   {[
                     { id: 1, label: 'Your Info', icon: User },
@@ -405,11 +408,11 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                       </div>
                       <div className="flex flex-col">
                         <span className={cn(
-                          "orbitron text-[9px] tracking-[0.2em] uppercase font-black",
+                          "orbitron text-xs tracking-[0.2em] uppercase font-black",
                           step >= s.id ? "text-accent-ice" : "text-zinc-500"
                         )}>Step {s.id}</span>
                         <span className={cn(
-                          "orbitron text-[10px] tracking-widest uppercase font-black",
+                          "orbitron text-xs tracking-widest uppercase font-black",
                           step === s.id ? "text-white" : "text-zinc-400"
                         )}>{s.label}</span>
                       </div>
@@ -430,7 +433,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                       className="space-y-8"
                     >
                       <div>
-                        <div className="orbitron text-[10px] tracking-widest text-accent-blue uppercase mb-2">Step 1 of 3</div>
+                        <div className="orbitron text-xs tracking-widest text-accent-blue uppercase mb-2">Step 1 of 3</div>
                         <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Your Info</h3>
                         <p className="text-zinc-400 text-sm">Tell us how to reach you and what you drive.</p>
                       </div>
@@ -502,7 +505,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                       className="space-y-8"
                     >
                       <div>
-                        <div className="orbitron text-[10px] tracking-widest text-accent-blue uppercase mb-2">Step 2 of 3</div>
+                        <div className="orbitron text-xs tracking-widest text-accent-blue uppercase mb-2">Step 2 of 3</div>
                         <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">What Do You Need?</h3>
                         <p className="text-zinc-400 text-sm">Pick a service. Prices are starting prices.</p>
                       </div>
@@ -511,7 +514,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                         <legend className="sr-only">Choose a service</legend>
                         {CATALOG.map(section => (
                           <div key={section.title} className="space-y-2">
-                            <div className="orbitron text-[10px] tracking-widest text-zinc-400 uppercase px-1">{section.title}</div>
+                            <div className="orbitron text-xs tracking-widest text-zinc-400 uppercase px-1">{section.title}</div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {section.items.map(renderOption)}
                             </div>
@@ -538,7 +541,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                       </div>
 
                       <div className="flex gap-4">
-                        <button type="button" onClick={prevStep} className="flex-1 glass py-5 rounded-2xl orbitron text-[10px] font-black uppercase tracking-[0.3em] italic">Back</button>
+                        <button type="button" onClick={prevStep} className="flex-1 glass py-5 rounded-2xl orbitron text-xs font-black uppercase tracking-[0.2em] italic">Back</button>
                         <button
                           type="button"
                           disabled={!formData.service || (isCustom && !formData.notes.trim())}
@@ -560,7 +563,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                       className="space-y-8"
                     >
                       <div>
-                        <div className="orbitron text-[10px] tracking-widest text-accent-blue uppercase mb-2">Step 3 of 3</div>
+                        <div className="orbitron text-xs tracking-widest text-accent-blue uppercase mb-2">Step 3 of 3</div>
                         <h3 className="orbitron text-2xl font-black italic mb-2 uppercase">Review Your Request</h3>
                         <p className="text-zinc-400 text-sm">Check that everything looks right, then send it.</p>
                       </div>
@@ -572,21 +575,21 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
                         <dl className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                           <div>
-                            <dt className="orbitron text-[9px] tracking-[0.3em] text-zinc-400 mb-2 uppercase italic font-black">Vehicle</dt>
+                            <dt className="text-xs font-semibold tracking-wider text-zinc-400 mb-2 uppercase">Vehicle</dt>
                             <dd className="text-white font-bold tracking-tight">{formData.vehicle}</dd>
                           </div>
                           <div>
-                            <dt className="orbitron text-[9px] tracking-[0.3em] text-zinc-400 mb-2 uppercase italic font-black">Service</dt>
+                            <dt className="text-xs font-semibold tracking-wider text-zinc-400 mb-2 uppercase">Service</dt>
                             <dd className="text-accent-blue font-bold tracking-tight">{formData.service}</dd>
                           </div>
                           <div className="md:col-span-2">
-                            <dt className="orbitron text-[9px] tracking-[0.3em] text-zinc-400 mb-2 uppercase italic font-black">Your Info</dt>
+                            <dt className="text-xs font-semibold tracking-wider text-zinc-400 mb-2 uppercase">Your Info</dt>
                             <dd className="text-white font-bold tracking-tight">{formData.name}</dd>
                             <dd className="text-zinc-400 text-xs font-mono">{formData.phone}</dd>
                           </div>
                           {formData.notes.trim() && (
                             <div className="md:col-span-2">
-                              <dt className="orbitron text-[9px] tracking-[0.3em] text-zinc-400 mb-2 uppercase italic font-black">Notes</dt>
+                              <dt className="text-xs font-semibold tracking-wider text-zinc-400 mb-2 uppercase">Notes</dt>
                               <dd className="text-zinc-300 text-sm whitespace-pre-wrap break-words">{formData.notes}</dd>
                             </div>
                           )}
@@ -594,7 +597,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
                         <div className="p-6 rounded-2xl bg-accent-blue/5 border border-accent-blue/20 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10 mt-6">
                           <div className="text-center sm:text-left">
-                            <div className="orbitron text-[9px] tracking-[0.4em] text-accent-ice mb-1 uppercase font-black">Starting Price</div>
+                            <div className="orbitron text-xs tracking-[0.2em] text-accent-ice mb-1 uppercase font-black">Starting Price</div>
                             <div className="text-3xl text-white orbitron font-black italic tracking-tighter">
                               {formData.priceLabel}
                             </div>
@@ -612,8 +615,28 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                         </p>
                       </div>
 
+                      {isError && (
+                        <div role="alert" className="p-5 rounded-2xl bg-red-500/10 border border-red-500/40 space-y-4">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle size={20} className="text-red-400 shrink-0 mt-0.5" aria-hidden="true" />
+                            <div>
+                              <p className="text-white font-bold mb-1">Sorry, your request didn't go through.</p>
+                              <p className="text-sm text-zinc-300 leading-relaxed">
+                                Please give us a call instead and we'll get you booked.
+                              </p>
+                            </div>
+                          </div>
+                          <a
+                            href={`tel:${PHONE_E164}`}
+                            className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-white text-black orbitron font-black text-lg tracking-wide"
+                          >
+                            <Phone size={18} aria-hidden="true" /> {PHONE_DISPLAY}
+                          </a>
+                        </div>
+                      )}
+
                       <div className="flex gap-4">
-                        <button type="button" onClick={prevStep} className="flex-1 glass py-5 rounded-2xl orbitron text-[10px] font-black uppercase tracking-[0.3em] italic">Back</button>
+                        <button type="button" onClick={prevStep} className="flex-1 glass py-5 rounded-2xl orbitron text-xs font-black uppercase tracking-[0.2em] italic">Back</button>
                         <button
                           type="button"
                           disabled={isSubmitting}
@@ -627,7 +650,7 @@ function BookingModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                             </>
                           ) : (
                             <>
-                              Send Request <Zap size={18} aria-hidden="true" />
+                              {isError ? 'Try Again' : 'Send Request'} <Zap size={18} aria-hidden="true" />
                             </>
                           )}
                         </button>
@@ -687,6 +710,7 @@ function IgnitionScreen({ onComplete }: { onComplete: () => void; key?: React.Ke
       role="dialog"
       aria-modal="true"
       aria-label="EZ Performance intro"
+      data-nosnippet
       exit={{
         opacity: 0,
         scale: 1.5,
@@ -825,7 +849,7 @@ function Gallery(_props: { key?: React.Key }) {
       className="pt-32 pb-24 px-6 md:px-12 relative min-h-screen flex items-center justify-center"
     >
       <div className="text-center">
-        <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Gallery</div>
+        <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Gallery</div>
         <h1 className="orbitron text-5xl md:text-7xl font-black italic tracking-tight text-glow uppercase">
           COMING <span className="ice-highlight">SOON</span>
         </h1>
@@ -877,7 +901,7 @@ function Navbar({ currentView, onNavigate, onBookingOpen }: { currentView: View;
             <div className="orbitron font-black text-sm md:text-2xl leading-none tracking-tighter italic text-white flex flex-col">
               <span className="blue-highlight">EZ PERFORMANCE</span>
             </div>
-            <div className="hidden lg:block orbitron text-[7px] tracking-[0.3em] text-zinc-400 font-black uppercase mt-1 leading-none italic">
+            <div className="hidden lg:block orbitron text-xs tracking-[0.2em] text-zinc-400 font-black uppercase mt-1 leading-none italic">
               Automotive Diagnostics · Repair · Maintenance
             </div>
           </div>
@@ -902,7 +926,7 @@ function Navbar({ currentView, onNavigate, onBookingOpen }: { currentView: View;
         <button
           type="button"
           onClick={onBookingOpen}
-          className="gradient-btn px-3 py-2 md:px-8 md:py-3 rounded flex items-center gap-2 orbitron font-black text-[9px] md:text-xs tracking-widest text-black shadow-[0_0_15px_rgba(52,214,255,0.3)] hover:scale-105 transition-transform"
+          className="gradient-btn px-3 py-2 md:px-8 md:py-3 rounded flex items-center gap-2 orbitron font-black text-xs tracking-widest text-black shadow-[0_0_15px_rgba(52,214,255,0.3)] hover:scale-105 transition-transform"
         >
           <Calendar size={12} className="md:hidden" aria-hidden="true" />
           <span className="hidden sm:inline">BOOK NOW</span>
@@ -1116,24 +1140,24 @@ function Hero({ onNavigate }: { onNavigate: (view: View) => void }) {
           <h1 className="orbitron text-[40px] sm:text-[70px] md:text-[110px] font-black italic leading-[0.8] mb-8 tracking-tighter text-glow uppercase">
             EZ<br /><span className="ice-highlight">PERFORMANCE</span>
           </h1>
-          <p className="text-zinc-300 text-lg md:text-xl font-medium mb-10 max-w-lg leading-relaxed italic">
+          <p className="text-zinc-300 text-lg md:text-xl font-medium mb-10 max-w-lg leading-relaxed">
             Auto diagnostics, repair and maintenance with dealership-level precision, at our shop or at your place. Led by ASE Certified Master Technician Ethan Zandonatti.
           </p>
 
           <ul className="flex flex-wrap gap-4 mb-12">
-            <li className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-accent-blue hover:border-accent-blue transition-all">
+            <li className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-xs orbitron font-black tracking-widest text-accent-blue hover:border-accent-blue transition-all">
               <div className="w-6 h-6 rounded-lg bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20">
                 <MapPin size={14} aria-hidden="true" />
               </div>
               SHOP & MOBILE SERVICE
             </li>
-            <li className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-zinc-300 hover:border-accent-blue transition-all">
+            <li className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-xs orbitron font-black tracking-widest text-zinc-300 hover:border-accent-blue transition-all">
               <div className="w-6 h-6 rounded-lg bg-accent-blue/10 flex items-center justify-center border border-accent-blue/20">
                 <Globe size={14} aria-hidden="true" />
               </div>
               SERVING LOMPOC TO PASO ROBLES
             </li>
-            <li className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] orbitron font-black tracking-widest text-accent-ice hover:border-accent-ice transition-all">
+            <li className="badge flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-xs orbitron font-black tracking-widest text-accent-ice hover:border-accent-ice transition-all">
               <div className="w-6 h-6 rounded-lg bg-accent-ice/10 flex items-center justify-center border border-accent-ice/20">
                 <Wrench size={14} aria-hidden="true" />
               </div>
@@ -1155,6 +1179,7 @@ function Hero({ onNavigate }: { onNavigate: (view: View) => void }) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.2 }}
           aria-hidden="true"
+          data-nosnippet
           className="relative flex justify-center lg:justify-end hidden md:flex"
         >
           <DiagnosticSystem />
@@ -1256,7 +1281,7 @@ function Services({ onNavigate }: { onNavigate: (view: View) => void }) {
           >
             SERVICES WE OFFER
           </motion.h2>
-          <p className="text-zinc-400 max-w-3xl mx-auto text-lg md:text-xl italic font-medium leading-relaxed">
+          <p className="text-zinc-400 max-w-3xl mx-auto text-lg md:text-xl font-medium leading-relaxed">
             From high-voltage EV systems to truck leveling kits.
             We handle the jobs other shops can't.
           </p>
@@ -1267,7 +1292,7 @@ function Services({ onNavigate }: { onNavigate: (view: View) => void }) {
             <RouteLink
               view="catalog"
               onNavigate={onNavigate}
-              className="inline-block frost-outline px-10 py-4 font-black rounded-full orbitron text-[10px] md:text-xs tracking-[0.2em] shadow-lg uppercase"
+              className="inline-block frost-outline px-10 py-4 font-black rounded-full orbitron text-xs tracking-[0.2em] shadow-lg uppercase"
             >
               SEE ALL SERVICES & PRICES
             </RouteLink>
@@ -1301,7 +1326,7 @@ function Catalog({ onNavigate }: { onNavigate: (view: View) => void; key?: React
       <div className="container mx-auto max-w-5xl">
         <div className="mb-20 text-center">
           <h1 className="orbitron text-5xl md:text-7xl font-black italic mb-6 tracking-tight text-glow uppercase">Services <span className="ice-highlight">& Pricing</span></h1>
-          <p className="text-zinc-400 text-xl italic font-medium">Upfront starting prices. Your final price is confirmed after inspection.</p>
+          <p className="text-zinc-400 text-xl font-medium">Upfront starting prices. Your final price is confirmed after inspection.</p>
         </div>
 
         <div className="space-y-16">
@@ -1313,7 +1338,7 @@ function Catalog({ onNavigate }: { onNavigate: (view: View) => void; key?: React
                   <li key={item.name} className="flex flex-col md:flex-row md:items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-accent-blue/30 transition-all group">
                     <div>
                       <h3 className="orbitron text-lg font-bold text-white group-hover:ice-highlight transition-colors mb-1">{item.name}</h3>
-                      <p className="text-zinc-400 text-sm italic">{item.detail}</p>
+                      <p className="text-zinc-400 text-sm">{item.detail}</p>
                     </div>
                     <div className="mt-4 md:mt-0 text-right">
                       <span className="orbitron text-lg font-black italic blue-highlight">{item.price}</span>
@@ -1328,7 +1353,7 @@ function Catalog({ onNavigate }: { onNavigate: (view: View) => void; key?: React
         <div className="mt-20 glass p-10 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 border-accent-blue/30">
           <div className="max-w-md">
             <h2 className="orbitron text-2xl font-bold italic mb-4">Don't see what you need?</h2>
-            <p className="text-zinc-400 italic">We take on custom projects and less common vehicles. Get in touch for a quote.</p>
+            <p className="text-zinc-400">We take on custom projects and less common vehicles. Get in touch for a quote.</p>
           </div>
           <RouteLink
             view="contact"
@@ -1372,12 +1397,12 @@ function Process() {
       <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
           <div className="max-w-xl">
-            <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">The Process</div>
+            <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">The Process</div>
             <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase leading-tight">
               How It <br /><span className="ice-highlight">Works</span>
             </h2>
           </div>
-          <p className="text-zinc-400 text-lg italic max-w-sm">
+          <p className="text-zinc-400 text-lg max-w-sm">
             Simple and upfront. You talk directly with the technician who works on your car.
           </p>
         </div>
@@ -1396,7 +1421,7 @@ function Process() {
                 {step.num}
               </div>
               <h3 className="orbitron text-xl font-black italic text-white mb-4 uppercase">{step.title}</h3>
-              <p className="text-zinc-400 text-sm italic leading-relaxed">{step.description}</p>
+              <p className="text-zinc-400 text-sm leading-relaxed">{step.description}</p>
             </motion.li>
           ))}
         </ol>
@@ -1417,7 +1442,7 @@ function AuthorityGrid() {
     <section className="py-32 bg-black relative overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="flex flex-col items-center mb-16">
-          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Makes We Service</div>
+          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Makes We Service</div>
           <h2 className="orbitron text-4xl md:text-5xl font-black italic tracking-tighter text-glow text-center uppercase">
             All Major <span className="ice-highlight">Makes</span>
           </h2>
@@ -1435,7 +1460,7 @@ function AuthorityGrid() {
               whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.05)" }}
               className="p-6 rounded-2xl border border-white/5 bg-white/[0.02] flex items-center justify-center transition-all duration-300 group"
             >
-              <div className="orbitron text-[10px] md:text-xs font-black italic tracking-widest text-zinc-400 group-hover:text-accent-blue transition-colors uppercase text-center select-none">
+              <div className="orbitron text-xs font-black italic tracking-widest text-zinc-400 group-hover:text-accent-blue transition-colors uppercase text-center select-none">
                 {brand}
               </div>
             </motion.li>
@@ -1443,7 +1468,7 @@ function AuthorityGrid() {
         </ul>
 
         <div className="mt-16 text-center">
-          <p className="text-zinc-500 text-[10px] orbitron font-black tracking-[0.3em] uppercase italic">
+          <p className="text-zinc-500 text-xs orbitron font-black tracking-[0.2em] uppercase italic">
             Plus most other makes and models
           </p>
         </div>
@@ -1459,19 +1484,19 @@ function ServiceArea() {
         <div className="flex flex-col lg:flex-row items-center gap-16">
           <div className="flex-1 space-y-8">
             <div>
-              <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Service Area</div>
+              <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Service Area</div>
               <h2 className="orbitron text-4xl md:text-5xl font-black italic tracking-tighter text-glow uppercase leading-tight">
                 MOBILE <span className="ice-highlight">SERVICE</span> <br />AREA
               </h2>
             </div>
 
-            <p className="text-zinc-400 text-lg italic leading-relaxed max-w-lg">
+            <p className="text-zinc-400 text-lg leading-relaxed max-w-lg">
               We bring diagnostics, maintenance and many repairs to your home or work anywhere on the Central Coast. Bigger jobs are done at our shop.
             </p>
 
             <ul className="flex flex-wrap gap-3">
               {SERVICE_AREA.map(city => (
-                <li key={city} className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-[10px] orbitron font-black tracking-widest text-zinc-400 hover:text-accent-blue hover:border-accent-blue transition-all cursor-default">
+                <li key={city} className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs orbitron font-black tracking-widest text-zinc-400 hover:text-accent-blue hover:border-accent-blue transition-all cursor-default">
                   {city}
                 </li>
               ))}
@@ -1486,7 +1511,7 @@ function ServiceArea() {
                   <Globe size={40} className="text-accent-blue" aria-hidden="true" />
                 </div>
                 <div className="orbitron text-3xl font-black italic text-white mb-2 uppercase">Central Coast</div>
-                <div className="orbitron text-xs tracking-[0.4em] text-accent-blue font-black uppercase">Lompoc to Paso Robles</div>
+                <div className="orbitron text-xs tracking-[0.2em] text-accent-blue font-black uppercase">Lompoc to Paso Robles</div>
               </div>
 
               {/* Decorative Map Elements */}
@@ -1526,7 +1551,7 @@ function FAQ() {
     <section className="py-32 px-6 md:px-12 bg-white/[0.01]">
       <div className="container mx-auto max-w-4xl">
         <div className="text-center mb-20">
-          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">FAQ</div>
+          <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">FAQ</div>
           <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase">Common <span className="ice-highlight">Questions</span></h2>
         </div>
 
@@ -1589,13 +1614,13 @@ function Contact({ onBookingOpen }: { onBookingOpen: () => void }) {
             className="space-y-8"
           >
             <div>
-              <div className="orbitron text-accent-blue text-sm font-black tracking-[0.4em] mb-4 uppercase">Contact</div>
+              <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">Contact</div>
               <h1 className="orbitron text-5xl md:text-7xl font-black italic tracking-tighter text-glow mb-6 uppercase leading-tight">
                 LET'S GET TO <br />
                 <span className="ice-highlight">WORK.</span>
               </h1>
               <div className="w-24 h-1 bg-accent-blue mb-8"></div>
-              <p className="text-zinc-400 text-lg md:text-xl max-w-lg italic leading-relaxed">
+              <p className="text-zinc-400 text-lg md:text-xl max-w-lg leading-relaxed">
                 Talk directly with Ethan Zandonatti, the ASE Certified Master Technician who will work on your vehicle.
                 Call, or book online and we'll call you back the same day.
               </p>
@@ -1608,7 +1633,7 @@ function Contact({ onBookingOpen }: { onBookingOpen: () => void }) {
                 </div>
                 <div>
                   <div className="text-xs font-black orbitron tracking-widest text-accent-blue mb-1 uppercase">Tip</div>
-                  <p className="text-sm text-zinc-300 italic">Have your vehicle's year, make and model ready, plus a short description of the problem.</p>
+                  <p className="text-sm text-zinc-300">Have your vehicle's year, make and model ready, plus a short description of the problem.</p>
                 </div>
               </div>
             </div>
@@ -1632,7 +1657,7 @@ function Contact({ onBookingOpen }: { onBookingOpen: () => void }) {
               <div className="relative z-10 flex flex-col items-center sm:items-start text-black">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" aria-hidden="true" />
-                  <span className="orbitron text-[10px] font-black tracking-widest text-zinc-700 uppercase">Call Direct</span>
+                  <span className="orbitron text-xs font-black tracking-widest text-zinc-700 uppercase">Call Direct</span>
                 </div>
                 <div className="orbitron text-3xl sm:text-4xl md:text-5xl font-black italic tracking-tighter mb-1">
                   {PHONE_DISPLAY}
@@ -1652,7 +1677,7 @@ function Contact({ onBookingOpen }: { onBookingOpen: () => void }) {
                 <MessageCircle size={120} className="text-accent-blue" />
               </div>
               <div className="relative z-10 flex flex-col items-center sm:items-start">
-                <div className="orbitron text-[10px] font-black tracking-widest text-accent-blue mb-2 uppercase">Book Online</div>
+                <div className="orbitron text-xs font-black tracking-widest text-accent-blue mb-2 uppercase">Book Online</div>
                 <div className="orbitron text-2xl sm:text-3xl md:text-4xl font-black italic tracking-tighter text-white mb-2 uppercase">
                   START A <span className="ice-highlight">BOOKING</span>
                 </div>
@@ -1666,11 +1691,11 @@ function Contact({ onBookingOpen }: { onBookingOpen: () => void }) {
 
             <div className="grid grid-cols-2 gap-4 mt-2">
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                <div className="orbitron text-[9px] tracking-[0.3em] text-zinc-400 mb-1 uppercase">Response</div>
+                <div className="orbitron text-xs tracking-[0.2em] text-zinc-400 mb-1 uppercase">Response</div>
                 <div className="text-accent-ice text-xs font-black uppercase italic">Same-Day Callback</div>
               </div>
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                <div className="orbitron text-[9px] tracking-[0.3em] text-zinc-400 mb-1 uppercase">Certified</div>
+                <div className="orbitron text-xs tracking-[0.2em] text-zinc-400 mb-1 uppercase">Certified</div>
                 <div className="text-accent-ice text-xs font-black uppercase italic">ASE Master Tech</div>
               </div>
             </div>
@@ -1694,17 +1719,17 @@ function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (v
             <div className="orbitron font-black text-3xl tracking-tighter italic mb-4 flex items-center gap-3 justify-center md:justify-start">
               EZ<span className="blue-highlight">PERFORMANCE</span>
             </div>
-            <p className="text-zinc-400 text-[10px] tracking-[0.3em] uppercase font-black leading-loose mb-6 italic">
+            <p className="text-zinc-400 text-xs tracking-[0.2em] uppercase font-black leading-loose mb-6">
               Automotive Diagnostics · Repair · Maintenance
             </p>
-            <div className="space-y-2 text-zinc-400 font-mono text-[11px] uppercase tracking-widest">
+            <div className="space-y-2 text-zinc-400 font-mono text-xs uppercase tracking-widest">
               <p className="flex items-center gap-2 justify-center md:justify-start"><Globe size={12} className="text-accent-blue" aria-hidden="true" /> Service area: Lompoc to Paso Robles</p>
               <p className="flex items-center gap-2 justify-center md:justify-start"><User size={12} className="text-accent-blue" aria-hidden="true" /> Owner: Ethan Zandonatti</p>
               <p className="flex items-center gap-2 justify-center md:justify-start"><Phone size={12} className="text-accent-blue" aria-hidden="true" /> <a href={`tel:${PHONE_E164}`} className="hover:text-accent-blue transition-colors">{PHONE_DISPLAY}</a></p>
             </div>
           </div>
 
-          <nav aria-label="Footer" className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 orbitron text-[10px] tracking-[0.3em] font-black">
+          <nav aria-label="Footer" className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 orbitron text-xs tracking-[0.2em] font-black">
             {NAV_ITEMS.map(item => (
               <RouteLink
                 key={item.view}
@@ -1730,7 +1755,7 @@ function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (v
               />
             </div>
             <div className="text-zinc-400 orbitron text-xs font-black italic mb-2 tracking-widest">Est. 2026</div>
-            <p className="text-zinc-500 text-[10px] font-mono uppercase">
+            <p className="text-zinc-400 text-xs font-mono uppercase">
               © {new Date().getFullYear()} EZ PERFORMANCE. PHENOMENAL PRECISION.
             </p>
           </div>

@@ -18,8 +18,8 @@ async function startServer() {
     const discordUrl = process.env.DISCORD_WEBHOOK_URL;
 
     if (!discordUrl) {
-      console.warn("Discord Webhook not configured. Skipping notification.");
-      return res.status(200).json({ success: true, message: "No notification service configured" });
+      console.warn("DISCORD_WEBHOOK_URL not set: booking was not delivered.");
+      return res.status(503).json({ success: false, message: "No notification service configured" });
     }
 
     try {
