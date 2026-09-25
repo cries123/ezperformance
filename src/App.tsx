@@ -948,16 +948,19 @@ function Navbar({ currentView, onNavigate, onBookingOpen }: { currentView: View;
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu: solid background and a height-only animation. A see-through
+          background plus an opacity fade let the page show through while it opened
+          (and iOS Safari can't blur inside the header's own backdrop blur). */}
       <AnimatePresence>
         {isOpen && (
           <motion.nav
             id="mobile-menu"
             aria-label="Main"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden absolute top-full left-0 w-full bg-black/95 backdrop-blur-xl border-b border-zinc-800 overflow-hidden"
+            initial={{ height: 0 }}
+            animate={{ height: 'auto' }}
+            exit={{ height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="lg:hidden absolute top-full left-0 w-full bg-zinc-950 border-b border-zinc-800 overflow-hidden shadow-2xl"
           >
             <div className="flex flex-col p-6 gap-4 orbitron">
               {NAV_ITEMS.map(item => (
@@ -1344,7 +1347,7 @@ function Catalog({ onNavigate }: { onNavigate: (view: View) => void; key?: React
                       <h3 className="orbitron text-lg font-bold text-white group-hover:ice-highlight transition-colors mb-1">{item.name}</h3>
                       <p className="text-zinc-400 text-sm">{item.detail}</p>
                     </div>
-                    <div className="mt-4 md:mt-0 text-right">
+                    <div className="mt-3 md:mt-0 md:text-right shrink-0">
                       <span className="orbitron text-lg font-black italic blue-highlight">{item.price}</span>
                     </div>
                   </li>
@@ -1399,7 +1402,7 @@ function Process() {
   return (
     <section className="py-24 px-6 md:px-12 bg-white/2 border-y border-white/5">
       <div className="container mx-auto max-w-7xl">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
           <div className="max-w-xl">
             <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">The Process</div>
             <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase leading-tight">
@@ -1545,9 +1548,6 @@ function ServiceArea() {
   );
 }
 
-// Replace with a real photo: drop e.g. ethan.jpg into /public and point this at it.
-const ETHAN_PHOTO = '/ethan-placeholder.svg';
-
 function About() {
   const facts = [
     { value: "15+", label: "Years of experience" },
@@ -1558,25 +1558,8 @@ function About() {
   return (
     <section id="about" className="py-32 px-6 md:px-12 relative overflow-hidden">
       <div className="container mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="lg:col-span-2 relative max-w-sm mx-auto w-full"
-          >
-            <div className="absolute inset-0 bg-accent-blue/10 blur-[80px] rounded-full -z-10" aria-hidden="true" />
-            <img
-              src={ETHAN_PHOTO}
-              alt="Ethan Zandonatti, owner of EZ Performance"
-              width={600}
-              height={750}
-              loading="lazy"
-              className="w-full aspect-[4/5] object-cover rounded-[2.5rem] border border-accent-blue/20 shadow-2xl"
-            />
-          </motion.div>
-
-          <div className="lg:col-span-3 space-y-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="space-y-8">
             <div>
               <div className="orbitron text-accent-blue text-sm font-black tracking-[0.3em] mb-4 uppercase">About</div>
               <h2 className="orbitron text-4xl md:text-6xl font-black italic tracking-tighter text-glow uppercase leading-tight">
@@ -2023,7 +2006,7 @@ function Footer({ currentView, onNavigate }: { currentView: View, onNavigate: (v
             ))}
           </nav>
 
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-center md:items-end">
             <div className="h-12 w-16 mb-4 opacity-40 hover:opacity-100 transition-opacity">
               <img
                 src="/motor-logo.png"
