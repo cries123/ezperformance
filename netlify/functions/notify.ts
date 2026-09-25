@@ -7,7 +7,7 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    const { name, phone, vehicle, service, priceLabel } = JSON.parse(event.body || "{}");
+    const { name, phone, vehicle, service, priceLabel, notes } = JSON.parse(event.body || "{}");
     const discordUrl = process.env.DISCORD_WEBHOOK_URL;
 
     if (!discordUrl) {
@@ -31,7 +31,9 @@ export const handler: Handler = async (event, context) => {
             { name: "Phone", value: phone || "N/A", inline: true },
             { name: "Vehicle", value: vehicle || "N/A" },
             { name: "Service", value: service || "N/A" },
-            { name: "Estimated Total", value: priceLabel || "Custom Quote" }
+            { name: "Estimated Total", value: priceLabel || "Custom Quote" },
+            // Discord rejects field values over 1024 characters
+            { name: "Notes", value: notes ? String(notes).slice(0, 1000) : "None" }
           ],
           footer: { text: "Precision Mechanical Engine • Booking Terminal v2" },
           timestamp: new Date().toISOString()

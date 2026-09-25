@@ -21,8 +21,8 @@ service cloud.firestore {
 
     match /appointments/{appointmentId} {
       allow create: if isValidId(appointmentId) && isValidAppointment(request.resource.data);
-      // Allow reading for availability checks. In a production app, we might restrict fields.
-      allow read: if true;
+      // No public reads: appointments contain customer names and phone numbers.
+      // Read them from the Firebase console or an authenticated admin only.
     }
   }
 }

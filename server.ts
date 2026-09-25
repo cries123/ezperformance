@@ -13,7 +13,7 @@ async function startServer() {
 
   // API Routes
   app.post("/api/notify", async (req, res) => {
-    const { name, phone, vehicle, service, priceLabel } = req.body;
+    const { name, phone, vehicle, service, priceLabel, notes } = req.body;
 
     const discordUrl = process.env.DISCORD_WEBHOOK_URL;
 
@@ -36,7 +36,9 @@ async function startServer() {
               { name: "Phone", value: phone || "N/A", inline: true },
               { name: "Vehicle", value: vehicle || "N/A" },
               { name: "Service", value: service || "N/A" },
-              { name: "Estimated Total", value: priceLabel || "Custom Quote" }
+              { name: "Estimated Total", value: priceLabel || "Custom Quote" },
+              // Discord rejects field values over 1024 characters
+              { name: "Notes", value: notes ? String(notes).slice(0, 1000) : "None" }
             ],
             footer: { text: "Precision Mechanical Engine • Booking Terminal v2" },
             timestamp: new Date().toISOString()
@@ -63,7 +65,8 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // extensions lets /services serve services.html, matching Netlify's pretty URLs
+    app.use(express.static(distPath, { extensions: ['html'] }));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
